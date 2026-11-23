@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>i-Hub Ahmedabad — Secured RSVP Verification Gate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:           #f8fafc;
+      --card-bg:      #ffffff;
+      --border:       #e2e8f0;
+      --border-dark:  #cbd5e1;
+      --border-focus: #2563eb;
+      --text-main:    #0f172a;
+      --text-muted:   #475569;
+      --text-subtle:  #64748b;
+      --primary:      #2563eb;
+      --primary-hover:#1d4ed8;
+      --primary-light:#eff6ff;
+      --emerald:      #059669;
+      --emerald-light:#ecfdf5;
+      --rose:         #dc2626;
+      --rose-light:   #fef2f2;
+      --shadow-sm:    0 1px 2px rgba(15, 23, 42, 0.05);
+      --shadow-md:    0 4px 6px -1px rgba(15, 23, 42, 0.07);
+      --shadow-lg:    0 10px 25px -3px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+    .navbar {
+      background: #ffffff; border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-sm);
+    }
+    .nav-brand { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-box {
+      width: 40px; height: 40px; background: linear-gradient(135deg, #2563eb, #059669);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      color: #ffffff; font-size: 20px; font-weight: 800;
+    }
+    .nav-title { font-size: 15px; font-weight: 800; color: var(--text-main); }
+    .nav-subtitle { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .main-content { flex: 1; max-width: 680px; width: 100%; margin: 36px auto; padding: 0 20px 48px; }
+
+    /* Progress Indicators */
+    .rsvp-progress {
+      display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px;
+    }
+    .prog-step {
+      display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text-subtle);
+    }
+    .prog-step.active { color: var(--primary); }
+    .prog-step.completed { color: var(--emerald); }
+    .prog-badge {
+      width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      background: #e2e8f0; font-size: 12px; font-weight: 800;
+    }
+    .prog-step.active .prog-badge { background: var(--primary); color: #fff; }
+    .prog-step.completed .prog-badge { background: var(--emerald); color: #fff; }
+    .prog-line { width: 40px; height: 2px; background: #e2e8f0; }
+
+    .portal-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
+      box-shadow: var(--shadow-lg); overflow: hidden; position: relative;
+    }
+    .portal-card-accent {
+      height: 5px; background: linear-gradient(90deg, #10b981 0%, #2563eb 50%, #4f46e5 100%);
+    }
+    .card-body { padding: 32px 36px; }
+
+    .section-title { font-size: 22px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; }
+    .section-subtitle { font-size: 14px; color: var(--text-muted); line-height: 22px; margin-bottom: 24px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px; }
+    .form-group .req { color: var(--rose); margin-left: 2px; }
+
+    .input-control {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 14px; color: var(--text-main); background: #ffffff;
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-control:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+    .input-control.is-invalid { border-color: var(--rose); background: #fff5f5; }
+
+    .notice-box {
+      background: var(--primary-light); border: 1px solid #bfdbfe; border-radius: 10px;
+      padding: 16px; margin-bottom: 24px; font-size: 13px; color: #1e40af; line-height: 20px;
+    }
+    .alert-danger {
+      background: var(--rose-light); border: 1px solid #fecaca; border-radius: 10px;
+      padding: 16px; margin-bottom: 24px; font-size: 13px; color: #991b1b; line-height: 20px;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; border: none; text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: #ffffff; width: 100%; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid var(--border); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .badge-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;
+      padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    }
+
+    .hidden { display: none !important; }
+
+    .review-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 24px;
+    }
+    .review-item div:first-child { font-size: 11px; font-weight: 700; color: var(--text-subtle); text-transform: uppercase; }
+    .review-item div:last-child { font-size: 14px; font-weight: 700; color: #0f172a; margin-top: 3px; }
+
+    /* Toast Notification */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; }
+    .toast {
+      background: #0f172a; color: #ffffff; padding: 12px 20px; border-radius: 8px;
+      font-size: 13.5px; font-weight: 600; box-shadow: var(--shadow-lg);
+      margin-top: 8px; display: flex; align-items: center; gap: 8px;
+      animation: slideUp 0.25s ease-out;
+    }
+    .toast.success { background: #059669; }
+    .toast.error { background: #dc2626; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <div class="nav-logo-box">ih</div>
+      <div>
+        <div class="nav-title">i-Hub Gujarat Innovation Hackathon</div>
+        <div class="nav-subtitle">Navrangpura, Ahmedabad • Secured Gate</div>
+      </div>
+    </div>
+    <span class="badge-pill">🔒 Secured 2-Step RSVP</span>
+  </nav>
+
+  <div class="main-content">
+
+    <!-- Stepper Header -->
+    <div class="rsvp-progress">
+      <div class="prog-step active" id="prog1">
+        <div class="prog-badge">1</div>
+        <span>Security Gate</span>
+      </div>
+      <div class="prog-line"></div>
+      <div class="prog-step" id="prog2">
+        <div class="prog-badge">2</div>
+        <span>Attendance Pledge</span>
+      </div>
+      <div class="prog-line"></div>
+      <div class="prog-step" id="prog3">
+        <div class="prog-badge">3</div>
+        <span>Pass Issued</span>
+      </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="portal-card">
+      <div class="portal-card-accent"></div>
+
+      <!-- PAGE 1: SECURITY GATE -->
+      <div class="card-body" id="pageGate">
+        <div style="margin-bottom: 20px;">
+          <h1 class="section-title">Step 1: Identity & Credentials Gate</h1>
+          <p class="section-subtitle">
+            To unlock your finalist seat, please verify your credentials. Enter the Registration Number and Email issued in your invitation dossier.
+          </p>
+        </div>
+
+        <div class="notice-box">
+          <strong>🔒 Security Protocol:</strong> Access to this RSVP portal is cryptographically locked to shortlisted candidates. Only participants with a verified i-Hub Registration ID can proceed.
+        </div>
+
+        <form id="formGate" onsubmit="event.preventDefault(); verifyGate();">
+          <div class="form-group">
+            <label for="gateRegId">Registration Number <span class="req">*</span></label>
+            <input type="text" id="gateRegId" class="input-control" placeholder="e.g. IHUB-2026-9842" style="font-family: 'JetBrains Mono', monospace; font-weight: 700; text-transform: uppercase;" required />
+          </div>
+
+          <div class="form-group">
+            <label for="gateEmail">Registered Email Address <span class="req">*</span></label>
+            <input type="email" id="gateEmail" class="input-control" placeholder="e.g. innovator@example.com" required />
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnVerifyGate">
+            Unlock Attendance Form →
+          </button>
+        </form>
+      </div>
+
+      <!-- PAGE 2: FINAL ATTENDANCE & ARRIVAL CONFIRMATION -->
+      <div class="card-body hidden" id="pageForm">
+        <div style="margin-bottom: 20px;">
+          <h1 class="section-title">Step 2: Final Attendance & Logistics</h1>
+          <p class="section-subtitle">
+            Confirmed identity for <strong id="confParticipantName" style="color: var(--primary);">-</strong> (<span id="confRegId" style="font-family: 'JetBrains Mono', monospace;">-</span>). Please complete your arrival details.
+          </p>
+        </div>
+
+        <!-- Verified Profile Summary -->
+        <div class="review-grid">
+          <div class="review-item">
+            <div>PARTICIPANT</div>
+            <div id="dispName">-</div>
+          </div>
+          <div class="review-item">
+            <div>SQUAD / TEAM</div>
+            <div id="dispTeam">-</div>
+          </div>
+          <div class="review-item">
+            <div>CHALLENGE TRACK</div>
+            <div id="dispTrack" style="color: var(--primary);">-</div>
+          </div>
+          <div class="review-item">
+            <div>FOOD PREFERENCE</div>
+            <div id="dispFood">-</div>
+          </div>
+        </div>
+
+        <form id="formConfirm" onsubmit="event.preventDefault(); submitFinalRsvp();">
+          <div class="form-group">
+            <label for="laptopSerial">Personal Laptop Serial / Model <span class="req">*</span></label>
+            <input type="text" id="laptopSerial" class="input-control" placeholder="e.g. MacBook Pro M3 / Dell XPS 15 (Tag: SN-82910)" required />
+            <span style="font-size: 11.5px; color: var(--text-subtle); margin-top: 4px; display: block;">Required for campus security gate property clearance.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="arrivalTime">Expected Check-in Time <span class="req">*</span></label>
+            <select id="arrivalTime" class="input-control" required>
+              <option value="Dec 12 - 08:30 AM (Standard Opening)" selected>Friday, Dec 12 — 08:30 AM (Opening Gate)</option>
+              <option value="Dec 12 - 09:15 AM (Before Opening Ceremony)">Friday, Dec 12 — 09:15 AM (Pre-Ceremony)</option>
+              <option value="Dec 12 - 10:00 AM (Sharp at Inauguration)">Friday, Dec 12 — 10:00 AM (Inauguration)</option>
+            </select>
+          </div>
+
+          <!-- Anti-Exit Strict Disqualification Undertaking -->
+          <div class="alert-danger" style="margin-top: 20px;">
+            <div style="font-size: 13.5px; font-weight: 800; margin-bottom: 6px;">
+              🚨 MANDATORY ON-CAMPUS DISQUALIFICATION RULE
+            </div>
+            <p style="margin-bottom: 10px;">
+              I strictly understand that the <strong>i-Hub Gujarat Innovation Hackathon</strong> is an intensive 36-hour physical hackathon. Stepping outside the campus premises at Navrangpura without written clearance from the Event Warden results in <strong>immediate disqualification and permanent blacklist</strong>. No exceptions or second chances are given.
+            </p>
+            <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 12.5px; font-weight: 700; color: #7f1d1d;">
+              <input type="checkbox" id="checkDisqualifyRule" style="margin-top: 2px;" required />
+              <span>I pledge full compliance with the 36-hour non-stop campus attendance protocol and accept immediate disqualification if I leave without permission.</span>
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button type="submit" class="btn btn-primary" id="btnSubmitRsvp">
+              🎟️ Confirm Attendance & Issue Master Pass
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- PAGE 3: CONFIRMATION & MASTER BOARDING PASS ISSUED -->
+      <div class="card-body hidden" id="pageSuccess" style="text-align: center;">
+        <span style="font-size: 48px;">🎉</span>
+        <h1 class="section-title" style="color: var(--emerald); margin-top: 10px;">RSVP Officially Confirmed!</h1>
+        <p class="section-subtitle">
+          Your attendance is locked for <strong>i-Hub Gujarat Innovation Hackathon 2026</strong>.
+          An email with your <strong>Official Master Hacker Boarding Pass (PDF)</strong> and complete 36-hour schedule has been dispatched!
+        </p>
+
+        <div style="background: #0f172a; color: #ffffff; border-radius: 12px; padding: 22px; text-align: left; margin: 24px 0; box-shadow: var(--shadow-lg);">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 14px;">
+            <div>
+              <span style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">REGISTRATION ID</span>
+              <div style="font-size: 18px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: #38bdf8;" id="sucRegId">-</div>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">ASSIGNED BOOTH</span>
+              <div style="font-size: 15px; font-weight: 800; color: #34d399;" id="sucBooth">-</div>
+            </div>
+          </div>
+          <div style="font-size: 13px; line-height: 22px; color: #cbd5e1;">
+            <div><strong>Participant:</strong> <span id="sucName">-</span></div>
+            <div><strong>Venue:</strong> i-Hub Ahmedabad, Prajna Puram, Navrangpura 380015</div>
+            <div><strong>Gate Check-in:</strong> Friday, Dec 12 @ 08:30 AM IST</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a class="btn btn-primary" id="btnDownloadBoardingPass" href="#" target="_blank" style="width: auto;">
+            📥 Download Master Boarding Pass PDF
+          </a>
+          <a class="btn btn-secondary" href="/portal" style="width: auto;">
+            Back to Portal
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    let currentParticipant = null;
+    let urlToken = '';
+
+    // Auto-fill from URL params
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      urlToken = params.get('token') || '';
+      const regId = params.get('regId') || '';
+      if (regId) {
+        document.getElementById('gateRegId').value = regId;
+      }
+    });
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    async function verifyGate() {
+      const regId = document.getElementById('gateRegId').value.trim();
+      const email = document.getElementById('gateEmail').value.trim();
+      const btn = document.getElementById('btnVerifyGate');
+
+      if (!regId || !email) {
+        showToast('Please enter both Registration ID and Email.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Verifying Credentials...';
+
+      try {
+        const res = await fetch('/api/rsvp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ registrationId: regId, email: email, token: urlToken }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          currentParticipant = data.registration;
+
+          document.getElementById('confParticipantName').textContent = currentParticipant.participantName;
+          document.getElementById('confRegId').textContent = currentParticipant.registrationId;
+
+          document.getElementById('dispName').textContent = currentParticipant.participantName;
+          document.getElementById('dispTeam').textContent = currentParticipant.teamName || 'Solo';
+          document.getElementById('dispTrack').textContent = currentParticipant.track;
+          document.getElementById('dispFood').textContent = currentParticipant.foodPreference || 'Pure Vegetarian';
+
+          // Move to Step 2
+          document.getElementById('pageGate').classList.add('hidden');
+          document.getElementById('pageForm').classList.remove('hidden');
+
+          document.getElementById('prog1').classList.remove('active');
+          document.getElementById('prog1').classList.add('completed');
+          document.getElementById('prog2').classList.add('active');
+
+          showToast('✅ Identity verified! Complete arrival details.', 'success');
+        } else {
+          showToast('❌ ' + (data.error || 'Verification failed'), 'error');
+        }
+      } catch (err) {
+        showToast('❌ Network error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Unlock Attendance Form →';
+      }
+    }
+
+    async function submitFinalRsvp() {
+      const laptopSerial = document.getElementById('laptopSerial').value.trim();
+      const arrivalTime = document.getElementById('arrivalTime').value;
+      const checkDisqualify = document.getElementById('checkDisqualifyRule').checked;
+      const btn = document.getElementById('btnSubmitRsvp');
+
+      if (!checkDisqualify) {
+        showToast('You must acknowledge the campus attendance & disqualification rule.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Confirming Seat & Dispatching Boarding Pass...';
+
+      try {
+        const res = await fetch('/api/rsvp/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            registrationId: currentParticipant.registrationId,
+            laptopSerial,
+            arrivalTime,
+            token: urlToken,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          const reg = data.registration;
+
+          document.getElementById('sucRegId').textContent = reg.registrationId;
+          document.getElementById('sucBooth').textContent = reg.boothNumber || 'Booth #A-14';
+          document.getElementById('sucName').textContent = reg.participantName;
+
+          const pdfUrl = '/api/hackathon/download-pass?participantName=' + encodeURIComponent(reg.participantName) +
+            '&registrationId=' + encodeURIComponent(reg.registrationId) +
+            '&teamName=' + encodeURIComponent(reg.teamName || 'Solo') +
+            '&track=' + encodeURIComponent(reg.track);
+
+          document.getElementById('btnDownloadBoardingPass').href = pdfUrl;
+
+          // Move to Step 3
+          document.getElementById('pageForm').classList.add('hidden');
+          document.getElementById('pageSuccess').classList.remove('hidden');
+
+          document.getElementById('prog2').classList.remove('active');
+          document.getElementById('prog2').classList.add('completed');
+          document.getElementById('prog3').classList.add('completed');
+
+          showToast('🎉 Master Hacker Boarding Pass Issued!', 'success');
+        } else {
+          showToast('❌ ' + (data.error || 'Failed to complete RSVP'), 'error');
+        }
+      } catch (err) {
+        showToast('❌ Error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🎟️ Confirm Attendance & Issue Master Pass';
+      }
+    }
+  </script>
+</body>
+</html>

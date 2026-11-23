@@ -1,0 +1,23 @@
+{
+  "scripts": {
+    "start": "npx tsx previewServer.js",
+    "test": "node test.js",
+    "preview": "npx tsx previewServer.js",
+    "portal": "npx tsx portalServer.js",
+    "send:template": "npx tsx sendTemplateEmail.js"
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
+    "dotenv": "^17.4.2",
+    "mongoose": "^9.12.3",
+    "nodemailer": "^10.0.10",
+    "pdfkit": "^0.20.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "resend": "^6.28.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.13"
+  }
+}

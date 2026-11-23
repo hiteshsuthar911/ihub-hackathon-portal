@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>i-Hub Ahmedabad — Secured Hackathon Registration Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:           #f8fafc;
+      --card-bg:      #ffffff;
+      --border:       #e2e8f0;
+      --border-dark:  #cbd5e1;
+      --border-focus: #4f46e5;
+      --text-main:    #0f172a;
+      --text-muted:   #475569;
+      --text-subtle:  #64748b;
+      --primary:      #4f46e5;
+      --primary-hover:#4338ca;
+      --primary-light:#eef2ff;
+      --emerald:      #059669;
+      --emerald-light:#ecfdf5;
+      --rose:         #e11d48;
+      --rose-light:   #fff1f2;
+      --shadow-sm:    0 1px 2px rgba(15, 23, 42, 0.05);
+      --shadow-md:    0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+      --shadow-lg:    0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Top Navigation */
+    .navbar {
+      background: #ffffff; border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-sm);
+    }
+    .nav-brand { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-box {
+      width: 40px; height: 40px; background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      color: #ffffff; font-size: 20px; font-weight: 800;
+    }
+    .nav-title { font-size: 15px; font-weight: 800; letter-spacing: -0.2px; color: var(--text-main); }
+    .nav-subtitle { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .nav-tabs { display: flex; gap: 8px; background: #f1f5f9; padding: 4px; border-radius: 8px; }
+    .nav-tab {
+      background: none; border: none; padding: 7px 16px; border-radius: 6px;
+      font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+    }
+    .nav-tab.active { background: #ffffff; color: var(--primary); box-shadow: var(--shadow-sm); font-weight: 700; }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+      border-bottom: 1px solid var(--border); padding: 36px 20px 28px; text-align: center;
+    }
+    .badge-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--primary-light); color: var(--primary); border: 1px solid #c7d2fe;
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .hero-title { font-size: 28px; font-weight: 800; color: var(--text-main); letter-spacing: -0.6px; margin-bottom: 8px; }
+    .hero-desc { font-size: 14.5px; color: var(--text-muted); max-width: 640px; margin: 0 auto 14px; line-height: 23px; }
+    .venue-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #ffffff; border: 1px solid var(--border); padding: 6px 16px; border-radius: 8px;
+      font-size: 12.5px; font-weight: 600; color: #334155; box-shadow: var(--shadow-sm);
+    }
+
+    /* Main Container */
+    .main-content { flex: 1; max-width: 780px; width: 100%; margin: 28px auto; padding: 0 20px 48px; }
+
+    /* Stepper Header */
+    .stepper {
+      display: flex; justify-content: space-between; position: relative;
+      margin-bottom: 28px; padding: 0 16px;
+    }
+    .stepper::before {
+      content: ""; position: absolute; top: 16px; left: 40px; right: 40px; height: 2px;
+      background: #e2e8f0; z-index: 1;
+    }
+    .step-item { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; cursor: pointer; }
+    .step-circle {
+      width: 32px; height: 32px; border-radius: 50%; background: #ffffff;
+      border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #64748b; transition: all 0.2s;
+    }
+    .step-item.active .step-circle { border-color: var(--primary); background: var(--primary); color: #ffffff; }
+    .step-item.completed .step-circle { border-color: var(--emerald); background: var(--emerald); color: #ffffff; }
+    .step-label { font-size: 12px; font-weight: 700; color: var(--text-subtle); margin-top: 6px; }
+    .step-item.active .step-label { color: var(--primary); font-weight: 800; }
+    .step-item.completed .step-label { color: var(--emerald); }
+
+    /* Card Wrapper */
+    .portal-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: var(--shadow-lg); padding: 32px 36px;
+      position: relative; overflow: hidden;
+    }
+    .portal-card-accent {
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, #4f46e5, #06b6d4);
+    }
+
+    .card-topbar {
+      display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;
+    }
+    .btn-sample-fill {
+      background: #f1f5f9; border: 1px solid #cbd5e1; color: var(--primary);
+      padding: 6px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-sample-fill:hover { background: var(--primary-light); border-color: var(--primary); }
+
+    /* Form Elements */
+    .section-title { font-size: 19px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; }
+    .section-subtitle { font-size: 13.5px; color: var(--text-subtle); margin-bottom: 22px; line-height: 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-group-full { grid-column: 1 / -1; }
+    .form-group { display: flex; flex-direction: column; position: relative; }
+    .form-group label { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px; }
+    .form-group label span.req { color: var(--rose); margin-left: 2px; }
+
+    .input-control {
+      background: #f8fafc; border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 10px 14px; font-size: 13.5px; color: var(--text-main); outline: none;
+      transition: all 0.15s; width: 100%;
+    }
+    .input-control:focus { border-color: var(--border-focus); background: #ffffff; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    .input-control.is-invalid { border-color: var(--rose); background: #fff5f5; }
+    .input-control.is-valid { border-color: var(--emerald); }
+
+    .field-error { font-size: 11.5px; color: var(--rose); font-weight: 600; margin-top: 4px; display: none; }
+    .input-control.is-invalid ~ .field-error { display: block; }
+
+    textarea.input-control { resize: vertical; min-height: 80px; font-family: inherit; }
+    .char-counter { font-size: 11px; color: var(--text-subtle); text-align: right; margin-top: 4px; }
+
+    /* Radio / Selection Cards */
+    .radio-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+    .radio-card {
+      border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px;
+      cursor: pointer; background: #f8fafc; transition: all 0.15s; display: flex; gap: 10px; align-items: flex-start;
+    }
+    .radio-card:hover { border-color: #cbd5e1; }
+    .radio-card.active { border-color: var(--primary); background: var(--primary-light); }
+    .radio-card input { margin-top: 3px; accent-color: var(--primary); }
+    .radio-title { font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+    .radio-desc { font-size: 12px; color: var(--text-subtle); margin-top: 2px; line-height: 17px; }
+
+    /* Track Option Cards */
+    .track-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+    .track-option {
+      border: 1.5px solid var(--border); border-radius: 8px; padding: 12px 14px;
+      cursor: pointer; background: #f8fafc; display: flex; align-items: center; justify-content: space-between;
+      transition: all 0.15s;
+    }
+    .track-option:hover { border-color: #cbd5e1; background: #ffffff; }
+    .track-option.active { border-color: var(--primary); background: var(--primary-light); font-weight: 700; color: var(--primary); }
+    .track-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+    /* Dynamic Teammates Box */
+    .teammates-box {
+      background: #f8fafc; border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 18px 20px; margin-bottom: 18px;
+    }
+    .teammates-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .teammate-row {
+      display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center;
+      background: #ffffff; border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .btn-remove-teammate {
+      background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;
+      padding: 4px 8px; border-radius: 4px; transition: color 0.15s;
+    }
+    .btn-remove-teammate:hover { color: var(--rose); background: var(--rose-light); }
+    .btn-add-teammate {
+      background: #ffffff; border: 1.5px dashed var(--primary); color: var(--primary);
+      padding: 8px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; width: 100%;
+      justify-content: center; margin-top: 6px;
+    }
+    .btn-add-teammate:hover { background: var(--primary-light); }
+    .btn-add-teammate:disabled { opacity: 0.5; cursor: not-allowed; border-color: #cbd5e1; color: #94a3b8; }
+
+    /* Buttons */
+    .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+    .btn {
+      padding: 11px 22px; border-radius: 8px; font-size: 13.5px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; border: none; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary { background: var(--primary); color: #ffffff; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary { background: #ffffff; border: 1.5px solid var(--border); color: #334155; }
+    .btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+    /* Summary Card (Before OTP) */
+    .review-card {
+      background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 16px 20px; margin-bottom: 20px;
+    }
+    .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .review-item div:first-child { font-size: 11px; font-weight: 700; color: var(--text-subtle); text-transform: uppercase; }
+    .review-item div:last-child { font-size: 13.5px; font-weight: 700; color: var(--text-main); margin-top: 2px; }
+
+    /* OTP Step Specifics */
+    .otp-box { text-align: center; padding: 10px 0 16px; }
+    .otp-email-highlight { font-weight: 700; color: var(--primary); font-size: 15px; margin: 4px 0 16px; }
+    .otp-inputs { display: flex; justify-content: center; gap: 10px; margin: 18px 0 14px; }
+    .otp-digit {
+      width: 48px; height: 56px; font-size: 24px; font-weight: 800; text-align: center;
+      border: 2px solid var(--border); border-radius: 10px; background: #f8fafc;
+      font-family: "JetBrains Mono", monospace; color: var(--primary); outline: none;
+    }
+    .otp-digit:focus { border-color: var(--primary); background: #ffffff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12); }
+    .timer-badge { font-size: 12.5px; color: var(--text-subtle); font-weight: 600; margin-bottom: 12px; }
+    .resend-btn {
+      background: none; border: none; color: var(--primary); font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: underline; padding: 4px;
+    }
+    .resend-btn:disabled { color: var(--text-subtle); text-decoration: none; cursor: not-allowed; }
+
+    /* Demo Hint Banner */
+    .demo-hint-box {
+      background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px;
+      padding: 12px 16px; margin: 14px auto 18px; max-width: 460px; text-align: left;
+      font-size: 12.5px; color: #3730a3; display: flex; align-items: center; justify-content: space-between;
+    }
+    .btn-autofill-otp {
+      background: var(--primary); color: #ffffff; border: none; padding: 5px 12px;
+      border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+    }
+
+    /* Success Badge Pass */
+    .success-pass-card {
+      background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px;
+      overflow: hidden; margin: 20px 0 24px; box-shadow: var(--shadow-sm);
+    }
+    .pass-header {
+      background: #1e1b4b; color: #ffffff; padding: 14px 20px; display: flex;
+      justify-content: space-between; align-items: center;
+    }
+    .pass-content { padding: 20px; }
+    .pass-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .pass-label { font-size: 11px; font-weight: 700; color: var(--text-subtle); text-transform: uppercase; }
+    .pass-val { font-size: 14px; font-weight: 700; color: var(--text-main); margin-top: 2px; }
+    .pass-barcode {
+      background: #f1f5f9; padding: 10px; text-align: center; border-top: 1px dashed #cbd5e1;
+      font-family: "JetBrains Mono", monospace; letter-spacing: 4px; color: #334155; font-size: 13px;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; padding: 14px 22px; border-radius: 8px;
+      font-size: 13.5px; font-weight: 600; z-index: 9999; display: none;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+    }
+    #toast.success { background: #065f46; color: #ecfdf5; border: 1px solid #059669; }
+    #toast.error   { background: #991b1b; color: #fef2f2; border: 1px solid #dc2626; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .radio-card-grid { grid-template-columns: 1fr; }
+      .portal-card { padding: 22px 18px; }
+      .navbar { padding: 12px 16px; }
+      .teammate-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="nav-logo-box">🏛️</div>
+      <div>
+        <div class="nav-title">i-Hub Gujarat</div>
+        <div class="nav-subtitle">Hackathon Registration Portal</div>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tabNewReg" onclick="switchMainTab('new')">New Registration</button>
+      <button class="nav-tab" id="tabCheckPass" onclick="switchMainTab('check')">Find My Pass</button>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="hero-banner">
+    <div class="badge-pill">⚡ OFFICIAL REGISTRATION</div>
+    <h1 class="hero-title">i-Hub Gujarat Innovation Hackathon 2026</h1>
+    <p class="hero-desc">
+      A 36-hour physical hackathon designed for ambitious engineers, designers, and founders to build real-world prototypes with industry leaders.
+    </p>
+    <div class="venue-badge">
+      📍 <strong>i-Hub Campus</strong>: Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad 380015
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <main class="main-content">
+
+    <!-- VIEW 1: REGISTRATION WIZARD -->
+    <div id="viewRegistration">
+      <!-- Stepper Indicator -->
+      <div class="stepper">
+        <div class="step-item active" id="stepIndicator1" onclick="tryNavigateStep(1)">
+          <div class="step-circle">1</div>
+          <div class="step-label">Profile</div>
+        </div>
+        <div class="step-item" id="stepIndicator2" onclick="tryNavigateStep(2)">
+          <div class="step-circle">2</div>
+          <div class="step-label">Squad & Track</div>
+        </div>
+        <div class="step-item" id="stepIndicator3" onclick="tryNavigateStep(3)">
+          <div class="step-circle">3</div>
+          <div class="step-label">Verify</div>
+        </div>
+        <div class="step-item" id="stepIndicator4">
+          <div class="step-circle">4</div>
+          <div class="step-label">Pass</div>
+        </div>
+      </div>
+
+      <div class="portal-card">
+        <div class="portal-card-accent"></div>
+
+        <!-- STEP 1: Innovator Profile -->
+        <div id="step1">
+          <div class="card-topbar">
+            <div>
+              <h2 class="section-title">Step 1: Innovator Profile</h2>
+              <p class="section-subtitle">Enter your official contact and background details for on-campus verification.</p>
+            </div>
+            <button class="btn-sample-fill" type="button" onclick="fillSampleData()" title="Autofill valid test values in 1 click">
+              ⚡ Fill Sample Data
+            </button>
+          </div>
+
+          <form id="formStep1" onsubmit="event.preventDefault(); goToStep2();">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="regName">Full Name <span class="req">*</span></label>
+                <input type="text" id="regName" class="input-control" placeholder="e.g. Aarav Sharma" required />
+                <span class="field-error" id="errName">Please enter your full name.</span>
+              </div>
+              <div class="form-group">
+                <label for="regEmail">Official Email <span class="req">*</span></label>
+                <input type="email" id="regEmail" class="input-control" placeholder="aarav@example.com" required />
+                <span class="field-error" id="errEmail">Please enter a valid email address (e.g. name@domain.com).</span>
+              </div>
+              <div class="form-group">
+                <label for="regPhone">Mobile Number (10 Digits) <span class="req">*</span></label>
+                <input type="tel" id="regPhone" class="input-control" placeholder="9876543210" required />
+                <span class="field-error" id="errPhone">Please enter a valid 10-digit mobile number.</span>
+              </div>
+              <div class="form-group">
+                <label for="regCollege">College / Organization <span class="req">*</span></label>
+                <input type="text" id="regCollege" class="input-control" placeholder="e.g. Gujarat University / Startup" required />
+                <span class="field-error" id="errCollege">Please enter your college or organization.</span>
+              </div>
+              <div class="form-group">
+                <label for="regGithub">GitHub Profile (Optional)</label>
+                <input type="text" id="regGithub" class="input-control" placeholder="github.com/aaravsharma" />
+              </div>
+              <div class="form-group">
+                <label for="regLinkedin">LinkedIn Profile (Optional)</label>
+                <input type="text" id="regLinkedin" class="input-control" placeholder="linkedin.com/in/aaravsharma" />
+              </div>
+            </div>
+
+            <div class="btn-row" style="justify-content: flex-end;">
+              <button class="btn btn-primary" type="button" onclick="goToStep2()">
+                Next: Squad & Track →
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- STEP 2: Squad & Challenge Track -->
+        <div id="step2" class="hidden">
+          <div class="card-topbar">
+            <div>
+              <h2 class="section-title">Step 2: Squad & Challenge Track</h2>
+              <p class="section-subtitle">Select your team format and choose the problem track for your project.</p>
+            </div>
+          </div>
+
+          <form id="formStep2" onsubmit="event.preventDefault(); showReviewModal();">
+            <label style="font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 8px; display: block;">
+              Participation Format <span class="req">*</span>
+            </label>
+            <div class="radio-card-grid">
+              <div class="radio-card active" id="cardSolo" onclick="setParticipationType('solo')">
+                <input type="radio" name="partType" id="radioSolo" value="solo" checked />
+                <div>
+                  <div class="radio-title">Solo Innovator</div>
+                  <div class="radio-desc">You are hacking individually or will form a team during on-campus matchmaking.</div>
+                </div>
+              </div>
+              <div class="radio-card" id="cardTeam" onclick="setParticipationType('team')">
+                <input type="radio" name="partType" id="radioTeam" value="team" />
+                <div>
+                  <div class="radio-title">Team Squad (2-4 Hackers)</div>
+                  <div class="radio-desc">Register as Team Lead and add your teammates directly.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Team Fields (Dynamic Squad Builder) -->
+            <div id="teamFields" class="teammates-box hidden">
+              <div class="teammates-header">
+                <div>
+                  <span style="font-size: 13px; font-weight: 800; color: #0f172a;">TEAM SQUAD DETAILS</span>
+                  <div style="font-size: 11.5px; color: var(--text-subtle);">Lead + up to 3 teammates (Total max 4 members)</div>
+                </div>
+                <span class="badge-pill" id="badgeSquadSize" style="margin: 0; padding: 3px 10px; font-size: 11px;">1 / 4 Hackers</span>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="regTeamName">Team Squad Name <span class="req">*</span></label>
+                <input type="text" id="regTeamName" class="input-control" placeholder="e.g. NeuralVoyage" />
+                <span class="field-error" id="errTeamName">Please enter a team squad name.</span>
+              </div>
+
+              <div id="teammateList"></div>
+
+              <button type="button" class="btn-add-teammate" id="btnAddTeammate" onclick="addTeammateRow()">
+                ➕ Add Teammate
+              </button>
+            </div>
+
+            <!-- Track Selection -->
+            <div class="form-group" style="margin-bottom: 18px;">
+              <label>Select Challenge Track <span class="req">*</span></label>
+              <div class="track-options">
+                <div class="track-option active" data-track="AI, Generative Agents & Automation" onclick="selectTrack(this)">
+                  <div class="track-title"><span>🤖</span> AI, Generative Agents & Automation</div>
+                  <span style="font-size: 12px; color: var(--primary);">✓ Selected</span>
+                </div>
+                <div class="track-option" data-track="Smart Cities & Urban Mobility" onclick="selectTrack(this)">
+                  <div class="track-title"><span>🏙️</span> Smart Cities & Urban Mobility</div>
+                </div>
+                <div class="track-option" data-track="FinTech & Next-Gen Digital Payments" onclick="selectTrack(this)">
+                  <div class="track-title"><span>💳</span> FinTech & Next-Gen Digital Payments</div>
+                </div>
+                <div class="track-option" data-track="AgriTech & Climate Solutions" onclick="selectTrack(this)">
+                  <div class="track-title"><span>🌾</span> AgriTech & Climate Solutions</div>
+                </div>
+                <div class="track-option" data-track="Healthcare & DeepTech Innovations" onclick="selectTrack(this)">
+                  <div class="track-title"><span>🧬</span> Healthcare & DeepTech Innovations</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+              <label for="regAbstract">Project Idea Abstract (Optional)</label>
+              <textarea id="regAbstract" class="input-control" placeholder="Brief 2-3 sentences on what prototype or architecture you plan to build..." maxlength="500" oninput="updateCharCount(this)"></textarea>
+              <div class="char-counter"><span id="charCount">0</span> / 500 characters</div>
+            </div>
+
+            <!-- Food & Dietary Selection -->
+            <div class="form-group" style="margin-bottom: 18px;">
+              <label for="regFood">Meal & Catering Preference <span class="req">*</span></label>
+              <select id="regFood" class="input-control" required>
+                <option value="Pure Vegetarian" selected>Pure Vegetarian (Authentic Gujarati / North Indian)</option>
+                <option value="Jain Food">Jain Food (Strict No Onion, No Garlic, Root Veg Free)</option>
+                <option value="Swaminarayan Food">Swaminarayan Food (No Onion, No Garlic)</option>
+                <option value="Standard / Non-Veg">Standard Non-Vegetarian / Universal</option>
+              </select>
+              <span style="font-size: 11.5px; color: var(--text-subtle); margin-top: 4px; display: block;">Official meal passes and barcodes will be generated according to this choice.</span>
+            </div>
+
+            <!-- Parental / Guardian Consent (Mandatory for Overnight Hackathon) -->
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+              <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">
+                👨‍👩‍👦 PARENTAL / GUARDIAN APPROVAL (OVERNIGHT STAY)
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                Required by i-Hub Security Cell for participants staying during the 36-hour sprint.
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label for="regParentName" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Parent / Guardian Name <span class="req">*</span></label>
+                  <input type="text" id="regParentName" class="input-control" placeholder="e.g. Rajesh Sharma" required />
+                </div>
+                <div>
+                  <label for="regParentPhone" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Parent Mobile Number <span class="req">*</span></label>
+                  <input type="tel" id="regParentPhone" class="input-control" placeholder="e.g. 9876543210" required />
+                </div>
+              </div>
+            </div>
+
+            <!-- Strict Campus Anti-Exit Undertaking -->
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+              <div style="font-size: 13px; font-weight: 800; color: #991b1b; margin-bottom: 6px;">
+                🚨 STRICT CAMPUS DISQUALIFICATION RULE
+              </div>
+              <p style="font-size: 12px; color: #7f1d1d; line-height: 18px; margin-bottom: 10px;">
+                Participants are strictly prohibited from leaving the i-Hub campus (Navrangpura, Ahmedabad) during the 36-hour hackathon. Any participant who steps out without prior written authorization from the Chief Event Warden will be <strong>immediately disqualified</strong> and barred from future i-Hub events.
+              </p>
+              <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 12px; font-weight: 700; color: #991b1b;">
+                <input type="checkbox" id="regSecurityAgreed" style="margin-top: 2px;" required checked />
+                <span>I have read, understood, and agree to the strict zero-tolerance campus anti-exit rule.</span>
+              </label>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-secondary" type="button" onclick="goToStep(1)">← Back to Profile</button>
+              <button class="btn btn-primary" type="button" id="btnGoToReview" onclick="showReviewModal()">
+                Review & Verify Email →
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- REVIEW SUMMARY BEFORE OTP DISPATCH -->
+        <div id="stepReview" class="hidden">
+          <h2 class="section-title">Review Your Registration Details</h2>
+          <p class="section-subtitle">Please double-check your information before we dispatch your verification code.</p>
+
+          <div class="review-card">
+            <div class="review-grid">
+              <div class="review-item">
+                <div>FULL NAME</div>
+                <div id="revName">-</div>
+              </div>
+              <div class="review-item">
+                <div>EMAIL ADDRESS</div>
+                <div id="revEmail" style="color: var(--primary);">-</div>
+              </div>
+              <div class="review-item">
+                <div>MOBILE NUMBER</div>
+                <div id="revPhone">-</div>
+              </div>
+              <div class="review-item">
+                <div>COLLEGE / ORG</div>
+                <div id="revCollege">-</div>
+              </div>
+              <div class="review-item">
+                <div>PARTICIPATION</div>
+                <div id="revPartType">-</div>
+              </div>
+              <div class="review-item">
+                <div>CHALLENGE TRACK</div>
+                <div id="revTrack" style="color: var(--primary);">-</div>
+              </div>
+              <div class="review-item">
+                <div>FOOD PLAN</div>
+                <div id="revFood" style="color: #059669;">-</div>
+              </div>
+              <div class="review-item">
+                <div>PARENT APPROVAL</div>
+                <div id="revParent">-</div>
+              </div>
+              <div class="review-item" id="revTeamRow" style="grid-column: 1 / -1; display: none;">
+                <div>TEAM ROSTER</div>
+                <div id="revTeamList" style="font-weight: 500; font-size: 13px; line-height: 20px;">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-secondary" type="button" onclick="goToStep(2)">← Edit Details</button>
+            <button class="btn btn-primary" type="button" id="btnRequestOtp" onclick="requestOtp()">
+              🔒 Send 6-Digit Verification Code
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: Security & OTP Verification -->
+        <div id="step3" class="hidden">
+          <div class="otp-box">
+            <span style="font-size: 36px;">🔐</span>
+            <h2 class="section-title" style="margin-top: 10px;">Security Email Verification</h2>
+            <p class="section-subtitle" style="margin-bottom: 6px;">
+              A 6-digit verification code has been dispatched to:
+            </p>
+            <div class="otp-email-highlight" id="displayOtpEmail">user@example.com</div>
+
+            <!-- Demo / Local Hint Pill -->
+            <div class="demo-hint-box" id="demoHintBox" style="display: none;">
+              <div>
+                <strong>💡 Local Testing Code:</strong> <span id="demoOtpText" style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 14px;">-</span>
+              </div>
+              <button type="button" class="btn-autofill-otp" onclick="autofillDemoOtp()">
+                📋 Auto-fill Code
+              </button>
+            </div>
+
+            <div class="otp-inputs">
+              <input type="text" maxlength="1" class="otp-digit" id="otp1" />
+              <input type="text" maxlength="1" class="otp-digit" id="otp2" />
+              <input type="text" maxlength="1" class="otp-digit" id="otp3" />
+              <input type="text" maxlength="1" class="otp-digit" id="otp4" />
+              <input type="text" maxlength="1" class="otp-digit" id="otp5" />
+              <input type="text" maxlength="1" class="otp-digit" id="otp6" />
+            </div>
+
+            <div class="timer-badge">
+              ⏳ Code expires in: <span id="countdown">10:00</span>
+            </div>
+
+            <div>
+              <button class="resend-btn" type="button" id="btnResend" onclick="resendOtp()">
+                Didn't receive code? Resend OTP
+              </button>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-secondary" type="button" onclick="goToStep(2)">← Edit Details</button>
+            <button class="btn btn-primary" type="button" id="btnConfirmOtp" onclick="submitOtpAndFinalize()">
+              ✓ Confirm & Issue Pass
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 4: Success & Participant Pass -->
+        <div id="step4" class="hidden">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <span style="font-size: 44px;">🎉</span>
+            <h2 class="section-title" style="color: var(--emerald); margin-top: 8px;">Registration Confirmed!</h2>
+            <p class="section-subtitle">
+              Your registration for <strong>i-Hub Gujarat Innovation Hackathon 2026</strong> is officially verified. An email with your official PDF pass has been sent!
+            </p>
+          </div>
+
+          <!-- Digital Badge Card -->
+          <div class="success-pass-card">
+            <div class="pass-header">
+              <span style="font-weight: 800; font-size: 13px; letter-spacing: 0.5px;">i-HUB OFFICIAL PARTICIPANT PASS</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #a5b4fc;" id="passRegId">IHUB-2026-0000</span>
+            </div>
+            <div class="pass-content">
+              <div class="pass-grid">
+                <div>
+                  <div class="pass-label">PARTICIPANT</div>
+                  <div class="pass-val" id="passName">-</div>
+                </div>
+                <div>
+                  <div class="pass-label">TEAM / SQUAD</div>
+                  <div class="pass-val" id="passTeam">-</div>
+                </div>
+                <div>
+                  <div class="pass-label">TRACK</div>
+                  <div class="pass-val" id="passTrack" style="color: var(--primary);">-</div>
+                </div>
+                <div>
+                  <div class="pass-label">REPORTING TIME</div>
+                  <div class="pass-val">Dec 12, 08:30 AM IST</div>
+                </div>
+              </div>
+              <div>
+                <div class="pass-label">VENUE</div>
+                <div class="pass-val" style="font-size: 12.5px; font-weight: 500; color: #334155;">
+                  i-Hub Campus, Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad 380015
+                </div>
+              </div>
+            </div>
+            <div class="pass-barcode" id="passBarcode">
+              || | |||| | ||| | || IHUB-2026-0000 || | |||| | |||
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <a class="btn btn-primary" id="btnDownloadPassPdf" href="#" target="_blank">
+              🎟️ Download Official PDF Pass
+            </a>
+            <button class="btn btn-secondary" type="button" onclick="resetFormForNew()">
+              ➕ Register Another Innovator
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIEW 2: CHECK EXISTING PASS -->
+    <div id="viewCheckPass" class="hidden">
+      <div class="portal-card">
+        <div class="portal-card-accent"></div>
+        <h2 class="section-title">Find Your i-Hub Hackathon Pass</h2>
+        <p class="section-subtitle">Enter your registered email address or Pass ID to view your status and download your PDF ticket.</p>
+
+        <form onsubmit="event.preventDefault(); lookupPass();">
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label for="lookupQuery">Email Address or Pass ID <span class="req">*</span></label>
+            <input type="text" id="lookupQuery" class="input-control" placeholder="e.g. aarav@example.com or IHUB-2026-9842" required />
+          </div>
+
+          <button class="btn btn-primary" type="submit">
+            🔍 Search Pass
+          </button>
+        </form>
+
+        <div id="lookupResult" class="hidden" style="margin-top: 28px;">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="toast"></div>
+
+  <script>
+    let currentStep = 1;
+    let highestStepReached = 1;
+    let sessionToken = "";
+    let participationType = "solo";
+    let selectedTrack = "AI, Generative Agents & Automation";
+    let countdownInterval = null;
+    let currentDemoOtp = "";
+    let teammates = [];
+
+    // Clear inline errors on input & support Enter key
+    ['regName', 'regEmail', 'regPhone', 'regCollege', 'regTeamName'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', function() {
+          el.classList.remove('is-invalid');
+        });
+        el.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentStep === 1) goToStep2();
+            else if (currentStep === 2) showReviewModal();
+          }
+        });
+      }
+    });
+
+    function switchMainTab(tab) {
+      if (tab === 'new') {
+        document.getElementById('tabNewReg').classList.add('active');
+        document.getElementById('tabCheckPass').classList.remove('active');
+        document.getElementById('viewRegistration').classList.remove('hidden');
+        document.getElementById('viewCheckPass').classList.add('hidden');
+      } else {
+        document.getElementById('tabNewReg').classList.remove('active');
+        document.getElementById('tabCheckPass').classList.add('active');
+        document.getElementById('viewRegistration').classList.add('hidden');
+        document.getElementById('viewCheckPass').classList.remove('hidden');
+      }
+    }
+
+    function setParticipationType(type) {
+      participationType = type;
+      if (type === 'team') {
+        document.getElementById('cardTeam').classList.add('active');
+        document.getElementById('cardSolo').classList.remove('active');
+        document.getElementById('radioTeam').checked = true;
+        document.getElementById('radioSolo').checked = false;
+        document.getElementById('teamFields').classList.remove('hidden');
+        if (teammates.length === 0) addTeammateRow();
+      } else {
+        document.getElementById('cardSolo').classList.add('active');
+        document.getElementById('cardTeam').classList.remove('active');
+        document.getElementById('radioSolo').checked = true;
+        document.getElementById('radioTeam').checked = false;
+        document.getElementById('teamFields').classList.add('hidden');
+      }
+    }
+
+    function selectTrack(el) {
+      document.querySelectorAll('.track-option').forEach(function(t) {
+        t.classList.remove('active');
+        const check = t.querySelector('span:last-child');
+        if (check) check.remove();
+      });
+      el.classList.add('active');
+      selectedTrack = el.getAttribute('data-track');
+      const span = document.createElement('span');
+      span.style.fontSize = '12px';
+      span.style.color = 'var(--primary)';
+      span.textContent = '✓ Selected';
+      el.appendChild(span);
+    }
+
+    function updateCharCount(textarea) {
+      document.getElementById('charCount').textContent = textarea.value.length;
+    }
+
+    function addTeammateRow() {
+      if (teammates.length >= 3) return;
+      teammates.push({ name: '', email: '' });
+      renderTeammates();
+    }
+
+    function removeTeammateRow(index) {
+      teammates.splice(index, 1);
+      renderTeammates();
+    }
+
+    function renderTeammates() {
+      const container = document.getElementById('teammateList');
+      container.innerHTML = '';
+
+      teammates.forEach(function(tm, i) {
+        const row = document.createElement('div');
+        row.className = 'teammate-row';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'input-control';
+        nameInput.placeholder = 'Teammate #' + (i + 2) + ' Full Name';
+        nameInput.value = tm.name;
+        nameInput.style.background = '#ffffff';
+        nameInput.oninput = function() { teammates[i].name = this.value; };
+
+        const emailInput = document.createElement('input');
+        emailInput.type = 'email';
+        emailInput.className = 'input-control';
+        emailInput.placeholder = 'Teammate #' + (i + 2) + ' Email';
+        emailInput.value = tm.email;
+        emailInput.style.background = '#ffffff';
+        emailInput.oninput = function() { teammates[i].email = this.value; };
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn-remove-teammate';
+        removeBtn.textContent = '✕';
+        removeBtn.title = 'Remove teammate';
+        removeBtn.onclick = function() { removeTeammateRow(i); };
+
+        row.appendChild(nameInput);
+        row.appendChild(emailInput);
+        row.appendChild(removeBtn);
+        container.appendChild(row);
+      });
+
+      const totalSize = 1 + teammates.length;
+      document.getElementById('badgeSquadSize').textContent = totalSize + ' / 4 Hackers';
+      const addBtn = document.getElementById('btnAddTeammate');
+      if (teammates.length >= 3) {
+        addBtn.disabled = true;
+        addBtn.textContent = 'Max Team Size Reached (4/4)';
+      } else {
+        addBtn.disabled = false;
+        addBtn.textContent = '➕ Add Teammate #' + (totalSize + 1);
+      }
+    }
+
+    function tryNavigateStep(targetStep) {
+      if (targetStep <= highestStepReached) {
+        goToStep(targetStep);
+      }
+    }
+
+    function goToStep(s) {
+      currentStep = s;
+      if (s > highestStepReached) highestStepReached = s;
+
+      ['step1', 'step2', 'stepReview', 'step3', 'step4'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+
+      if (s === 1) document.getElementById('step1').classList.remove('hidden');
+      if (s === 2) document.getElementById('step2').classList.remove('hidden');
+      if (s === 2.5) document.getElementById('stepReview').classList.remove('hidden');
+      if (s === 3) document.getElementById('step3').classList.remove('hidden');
+      if (s === 4) document.getElementById('step4').classList.remove('hidden');
+
+      const visualStep = Math.min(Math.floor(s), 4);
+      [1, 2, 3, 4].forEach(function(i) {
+        const ind = document.getElementById('stepIndicator' + i);
+        ind.classList.toggle('active', i === visualStep);
+        ind.classList.toggle('completed', i < visualStep);
+      });
+      window.scrollTo({ top: 160, behavior: 'smooth' });
+    }
+
+    function goToStep2() {
+      const nameEl = document.getElementById('regName');
+      const emailEl = document.getElementById('regEmail');
+      const phoneEl = document.getElementById('regPhone');
+      const collegeEl = document.getElementById('regCollege');
+
+      let valid = true;
+
+      if (!nameEl.value.trim() || nameEl.value.trim().length < 2) {
+        nameEl.classList.add('is-invalid');
+        valid = false;
+      } else {
+        nameEl.classList.remove('is-invalid');
+      }
+
+      const emailVal = emailEl.value.trim().toLowerCase();
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(emailVal)) {
+        emailEl.classList.add('is-invalid');
+        valid = false;
+      } else {
+        emailEl.classList.remove('is-invalid');
+      }
+
+      const phoneClean = phoneEl.value.replace(/\D/g, '');
+      const isIndianPhone = /^(\+?91|0)?[6-9]\d{9}$/.test(phoneClean);
+      const isIntlPhone = phoneClean.length >= 10 && phoneClean.length <= 15;
+      if (!isIndianPhone && !isIntlPhone) {
+        phoneEl.classList.add('is-invalid');
+        valid = false;
+      } else {
+        phoneEl.classList.remove('is-invalid');
+      }
+
+      if (!collegeEl.value.trim()) {
+        collegeEl.classList.add('is-invalid');
+        valid = false;
+      } else {
+        collegeEl.classList.remove('is-invalid');
+      }
+
+      if (!valid) {
+        showToast('Please fix the highlighted fields to continue.', 'error');
+        return;
+      }
+
+      goToStep(2);
+    }
+
+    function showReviewModal() {
+      if (participationType === 'team') {
+        const teamNameEl = document.getElementById('regTeamName');
+        if (!teamNameEl.value.trim()) {
+          teamNameEl.classList.add('is-invalid');
+          showToast('Please enter a team squad name.', 'error');
+          return;
+        } else {
+          teamNameEl.classList.remove('is-invalid');
+        }
+      }
+
+      const parentName = document.getElementById('regParentName').value.trim();
+      const parentPhone = document.getElementById('regParentPhone').value.trim();
+      const securityAgreed = document.getElementById('regSecurityAgreed').checked;
+
+      if (!securityAgreed) {
+        showToast('You must agree to the Campus Anti-Exit and Disqualification rule.', 'error');
+        return;
+      }
+
+      document.getElementById('revName').textContent = document.getElementById('regName').value.trim();
+      document.getElementById('revEmail').textContent = document.getElementById('regEmail').value.trim();
+      document.getElementById('revPhone').textContent = document.getElementById('regPhone').value.trim();
+      document.getElementById('revCollege').textContent = document.getElementById('regCollege').value.trim();
+      document.getElementById('revPartType').textContent = participationType === 'team' ? ('Team (' + (1 + teammates.length) + ' Members)') : 'Solo Innovator';
+      document.getElementById('revTrack').textContent = selectedTrack;
+      document.getElementById('revFood').textContent = document.getElementById('regFood').value;
+      document.getElementById('revParent').textContent = parentName ? (parentName + ' (' + parentPhone + ')') : 'Confirmed by Guardian';
+
+      const teamRow = document.getElementById('revTeamRow');
+      if (participationType === 'team') {
+        teamRow.style.display = 'block';
+        const teamName = document.getElementById('regTeamName').value.trim();
+        let listStr = '<strong>Squad Name:</strong> ' + teamName + '<br/>';
+        listStr += '• ' + document.getElementById('regName').value.trim() + ' (Lead)<br/>';
+        teammates.forEach(function(tm) {
+          if (tm.name || tm.email) {
+            listStr += '• ' + (tm.name || 'Member') + ' (' + (tm.email || 'No email') + ')<br/>';
+          }
+        });
+        document.getElementById('revTeamList').innerHTML = listStr;
+      } else {
+        teamRow.style.display = 'none';
+      }
+
+      goToStep(2.5);
+    }
+
+    async function requestOtp() {
+      const btn = document.getElementById('btnRequestOtp');
+      const email = document.getElementById('regEmail').value.trim().toLowerCase();
+      const name = document.getElementById('regName').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const college = document.getElementById('regCollege').value.trim();
+      const githubUrl = document.getElementById('regGithub').value.trim();
+      const linkedinUrl = document.getElementById('regLinkedin').value.trim();
+      const teamName = document.getElementById('regTeamName').value.trim();
+      const memberEmails = teammates.map(function(t) { return t.email.trim(); }).filter(Boolean);
+      const projectAbstract = document.getElementById('regAbstract').value.trim();
+      const foodPreference = document.getElementById('regFood').value;
+      const parentName = document.getElementById('regParentName').value.trim();
+      const parentPhone = document.getElementById('regParentPhone').value.trim();
+      const securityAgreed = document.getElementById('regSecurityAgreed').checked;
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Dispatching Code...';
+
+      try {
+        const payload = {
+          email: email,
+          participantName: name,
+          phone: phone,
+          college: college,
+          githubUrl: githubUrl,
+          linkedinUrl: linkedinUrl,
+          participationType: participationType,
+          teamName: participationType === 'team' ? teamName : 'Solo',
+          teamMembers: memberEmails,
+          track: selectedTrack,
+          projectAbstract: projectAbstract,
+          foodPreference: foodPreference,
+          parentName: parentName,
+          parentPhone: parentPhone,
+          securityAgreed: securityAgreed,
+        };
+
+        const res = await fetch('/portal/api/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          sessionToken = data.token;
+          document.getElementById('displayOtpEmail').textContent = email;
+
+          if (data.demoOtp) {
+            currentDemoOtp = data.demoOtp;
+            document.getElementById('demoOtpText').textContent = data.demoOtp;
+            document.getElementById('demoHintBox').style.display = 'flex';
+          } else {
+            document.getElementById('demoHintBox').style.display = 'none';
+          }
+
+          goToStep(3);
+          startCountdown(data.expiresAt);
+          setupOtpInputBehavior();
+          showToast('✅ Verification code dispatched to ' + email, 'success');
+        } else {
+          showToast('❌ ' + (data.error || 'Failed to dispatch OTP'), 'error');
+        }
+      } catch (err) {
+        showToast('❌ Network error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔒 Send 6-Digit Verification Code';
+      }
+    }
+
+    function autofillDemoOtp() {
+      if (!currentDemoOtp) return;
+      const chars = currentDemoOtp.split('');
+      chars.forEach(function(c, idx) {
+        const el = document.getElementById('otp' + (idx + 1));
+        if (el) el.value = c;
+      });
+      document.getElementById('btnConfirmOtp').focus();
+      showToast('📋 Code auto-filled! Click "Confirm & Issue Pass".', 'success');
+    }
+
+    async function resendOtp() {
+      requestOtp();
+    }
+
+    function setupOtpInputBehavior() {
+      const digits = [1, 2, 3, 4, 5, 6].map(function(i) { return document.getElementById('otp' + i); });
+      digits.forEach(function(el, idx) {
+        el.value = '';
+        el.oninput = function() {
+          if (el.value.length === 1 && idx < 5) digits[idx + 1].focus();
+        };
+        el.onkeydown = function(e) {
+          if (e.key === 'Backspace' && !el.value && idx > 0) digits[idx - 1].focus();
+          if (e.key === 'Enter') submitOtpAndFinalize();
+        };
+        el.onpaste = function(e) {
+          e.preventDefault();
+          const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+          paste.split('').forEach(function(c, i) { if (digits[i]) digits[i].value = c; });
+          if (digits[paste.length - 1]) digits[paste.length - 1].focus();
+        };
+      });
+      digits[0].focus();
+    }
+
+    function startCountdown(expiresAt) {
+      if (countdownInterval) clearInterval(countdownInterval);
+      const timerEl = document.getElementById('countdown');
+
+      function update() {
+        const diff = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        const m = Math.floor(diff / 60).toString().padStart(2, '0');
+        const s = (diff % 60).toString().padStart(2, '0');
+        timerEl.textContent = m + ':' + s;
+        if (diff <= 0) {
+          clearInterval(countdownInterval);
+          timerEl.textContent = 'Expired';
+        }
+      }
+      update();
+      countdownInterval = setInterval(update, 1000);
+    }
+
+    async function submitOtpAndFinalize() {
+      const btn = document.getElementById('btnConfirmOtp');
+      const otpCode = [1, 2, 3, 4, 5, 6].map(function(i) { return document.getElementById('otp' + i).value.trim(); }).join('');
+
+      if (otpCode.length !== 6) {
+        showToast('Please enter all 6 digits of your verification code.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Verifying & Registering...';
+
+      try {
+        const res = await fetch('/portal/api/verify-and-register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: sessionToken, otp: otpCode }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          const reg = data.registration;
+          document.getElementById('passRegId').textContent = reg.registrationId;
+          document.getElementById('passName').textContent = reg.participantName;
+          document.getElementById('passTeam').textContent = reg.teamName || 'Solo';
+          document.getElementById('passTrack').textContent = reg.track;
+          document.getElementById('passBarcode').textContent = '|| | |||| | ||| | || ' + reg.registrationId + ' || | |||| | |||';
+
+          const pdfUrl = '/api/hackathon/download-pass?participantName=' + encodeURIComponent(reg.participantName) +
+            '&registrationId=' + encodeURIComponent(reg.registrationId) +
+            '&teamName=' + encodeURIComponent(reg.teamName || 'Solo') +
+            '&track=' + encodeURIComponent(reg.track);
+
+          document.getElementById('btnDownloadPassPdf').href = pdfUrl;
+
+          goToStep(4);
+          showToast('🎉 Verification complete! Pass issued.', 'success');
+        } else {
+          showToast('❌ ' + (data.error || 'Verification failed'), 'error');
+        }
+      } catch (err) {
+        showToast('❌ Network error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✓ Confirm & Issue Pass';
+      }
+    }
+
+    function fillSampleData() {
+      document.getElementById('regName').value = 'Aarav Patel';
+      document.getElementById('regEmail').value = 'aarav.innovator@gmail.com';
+      document.getElementById('regPhone').value = '9876543210';
+      document.getElementById('regCollege').value = 'Gujarat University, Ahmedabad';
+      document.getElementById('regGithub').value = 'github.com/aaravpatel';
+      document.getElementById('regLinkedin').value = 'linkedin.com/in/aaravpatel';
+      ['regName', 'regEmail', 'regPhone', 'regCollege'].forEach(function(id) {
+        document.getElementById(id).classList.remove('is-invalid');
+      });
+      showToast('⚡ Sample profile filled in 1 click! Click "Next" to continue.', 'success');
+    }
+
+    async function lookupPass() {
+      const q = document.getElementById('lookupQuery').value.trim();
+      const resContainer = document.getElementById('lookupResult');
+      if (!q) {
+        showToast('Please enter your email or Pass ID.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/portal/api/lookup?q=' + encodeURIComponent(q));
+        const data = await res.json();
+
+        if (data.success && data.registration) {
+          const r = data.registration;
+          const pdfUrl = '/api/hackathon/download-pass?participantName=' + encodeURIComponent(r.participantName) +
+            '&registrationId=' + encodeURIComponent(r.registrationId) +
+            '&teamName=' + encodeURIComponent(r.teamName || 'Solo') +
+            '&track=' + encodeURIComponent(r.track);
+
+          resContainer.innerHTML = [
+            '<div class="success-pass-card" style="margin: 0 0 16px;">',
+            '  <div class="pass-header">',
+            '    <span style="font-weight: 800; font-size: 13px;">CONFIRMED REGISTRATION</span>',
+            '    <span style="font-family: \'JetBrains Mono\', monospace; font-size: 13px; font-weight: 700; color: #a5b4fc;">' + r.registrationId + '</span>',
+            '  </div>',
+            '  <div class="pass-content">',
+            '    <div class="pass-grid">',
+            '      <div><div class="pass-label">PARTICIPANT</div><div class="pass-val">' + r.participantName + '</div></div>',
+            '      <div><div class="pass-label">TEAM / SQUAD</div><div class="pass-val">' + (r.teamName || 'Solo') + '</div></div>',
+            '      <div><div class="pass-label">TRACK</div><div class="pass-val" style="color: var(--primary);">' + r.track + '</div></div>',
+            '      <div><div class="pass-label">STATUS</div><div class="pass-val" style="color: var(--emerald);">✓ Confirmed</div></div>',
+            '    </div>',
+            '  </div>',
+            '</div>',
+            '<div style="text-align: center;">',
+            '  <a class="btn btn-primary" href="' + pdfUrl + '" target="_blank">🎟️ Download Official i-Hub PDF Pass</a>',
+            '</div>'
+          ].join('');
+          resContainer.classList.remove('hidden');
+        } else {
+          resContainer.innerHTML = '<div style="padding: 16px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; color: #9f1239; font-size: 13.5px;">❌ No registration record found for "<strong>' + q + '</strong>". Please check for typos or register via the "New Registration" tab.</div>';
+          resContainer.classList.remove('hidden');
+        }
+      } catch (err) {
+        showToast('❌ Error looking up pass: ' + err.message, 'error');
+      }
+    }
+
+    function resetFormForNew() {
+      ['regName', 'regEmail', 'regPhone', 'regCollege', 'regGithub', 'regLinkedin', 'regTeamName', 'regAbstract'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      teammates = [];
+      setParticipationType('solo');
+      goToStep(1);
+    }
+
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.className = type;
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(function() { t.style.display = 'none'; }, 5000);
+    }
+  </script>
+</body>
+</html>
