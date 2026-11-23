@@ -5,6 +5,28 @@ require("dotenv").config();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Reusable persistent pooled transporter for instant Gmail dispatch without reconnection overhead
+let cachedTransporter = null;
+function getTransporter() {
+  if (!cachedTransporter && process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+    cachedTransporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true, // Use direct SSL for fastest initial handshake
+      pool: true,   // Keep persistent connection alive for instant dispatch
+      maxConnections: 5,
+      maxMessages: 100,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+      connectionTimeout: 5000,
+      socketTimeout: 5000,
+    });
+  }
+  return cachedTransporter;
+}
+
 /**
  * Normalizes arguments so functions can be called either as:
  * sendMail(to, subject, text, html) OR sendMail({ to, subject, text, html })
@@ -19,15 +41,16 @@ const parseMailArgs = (toOrOptions, subject, text, html) => {
 const sendMailWithNodemailer = async (toOrOptions, subject, text, html) => {
   const options = parseMailArgs(toOrOptions, subject, text, html);
   try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
+    const transporter = getTransporter() || nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
       },
-      connectionTimeout: 8000,
-      greetingTimeout: 5000,
-      socketTimeout: 8000,
+      connectionTimeout: 5000,
+      socketTimeout: 5000,
     });
 
     const mailOptions = {
