@@ -25,17 +25,10 @@ const {
 } = require("./generateHackathonDossier");
 
 /**
- * Dispatch an email via the selected provider (Nodemailer Gmail SMTP or Resend API)
+ * Dispatch an email strictly via Resend API
  */
 async function dispatchMail(mailData, service = "resend") {
-  // If service is resend, use sendMailWithResend; fallback to nodemailer if resend fails or vice versa
-  if (service === "resend") {
-    const res = await sendMailWithResend(mailData);
-    if (res.success) return res;
-    console.warn("[hackathonMailer] Resend failed, falling back to Nodemailer:", res.error);
-    return await sendMailWithNodemailer(mailData);
-  }
-  return await sendMailWithNodemailer(mailData);
+  return await sendMailWithResend(mailData);
 }
 
 /**
