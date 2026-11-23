@@ -64,6 +64,10 @@ const sendMailWithResend = async (toOrOptions, subject, text, html) => {
     }
 
     const response = await resend.emails.send(payload);
+    if (response.error) {
+      console.error("[Resend Error]:", response.error.message || response.error);
+      return { success: false, error: response.error };
+    }
     console.log("Email sent via Resend:", response);
     return { success: true, response };
   } catch (err) {
