@@ -25,6 +25,9 @@ const sendMailWithNodemailer = async (toOrOptions, subject, text, html) => {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS,
       },
+      connectionTimeout: 8000,
+      greetingTimeout: 5000,
+      socketTimeout: 8000,
     });
 
     const mailOptions = {
@@ -42,7 +45,7 @@ const sendMailWithNodemailer = async (toOrOptions, subject, text, html) => {
     console.log("Email sent via Nodemailer:", result.response);
     return { success: true, response: result.response };
   } catch (err) {
-    console.error("Error sending email via Nodemailer:", err);
+    console.error("Error sending email via Nodemailer:", err.message || err);
     return { success: false, error: err };
   }
 };

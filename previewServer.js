@@ -355,23 +355,34 @@ const server = http.createServer(async (req, res) => {
       // Generate Dual OTP (Candidate + Parent)
       const { token, rawCandidateOtp, rawParentOtp, expiresAt } = createOtpSession(email, data);
 
-      // 1. Dispatch Plain-Text OTP to Candidate
-      await sendCandidatePlainTextOtp({
-        to: email,
-        participantName: data.participantName,
-        code: rawCandidateOtp,
-        expiresInMinutes: 10,
-        service: "nodemailer",
-      });
+      // Dispatch Candidate and Parent plain-text OTPs concurrently in parallel
+      const serviceChoice = process.env.RESEND_API_KEY ? "resend" : "nodemailer";
 
-      // 2. Dispatch Plain-Text OTP to Parent
-      await sendParentPlainTextOtp({
-        to: parentEmail,
-        parentName: data.parentName || "Parent / Guardian",
-        participantName: data.participantName,
-        code: rawParentOtp,
-        expiresInMinutes: 10,
-        service: "nodemailer",
+      Promise.allSettled([
+        sendCandidatePlainTextOtp({
+          to: email,
+          participantName: data.participantName,
+          code: rawCandidateOtp,
+          expiresInMinutes: 10,
+          service: serviceChoice,
+        }),
+        sendParentPlainTextOtp({
+          to: parentEmail,
+          parentName: data.parentName || "Parent / Guardian",
+          participantName: data.participantName,
+          code: rawParentOtp,
+          expiresInMinutes: 10,
+          service: serviceChoice,
+        }),
+      ]).then((results) => {
+        results.forEach((r, idx) => {
+          const recipient = idx === 0 ? email : parentEmail;
+          if (r.status === "rejected" || (r.value && !r.value.success)) {
+            console.error(`[OTP Dispatch Warning for ${recipient}]:`, r.reason || (r.value && r.value.error));
+          } else {
+            console.log(`[OTP Dispatched Successfully to ${recipient}]`);
+          }
+        });
       });
 
       console.log(`[Portal] Dual OTPs generated: Candidate (${email}) -> ${rawCandidateOtp} | Parent (${parentEmail}) -> ${rawParentOtp}`);
