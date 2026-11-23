@@ -25,10 +25,18 @@ const {
 } = require("./generateHackathonDossier");
 
 /**
- * Dispatch an email strictly via Resend API
+ * Dispatch an email: Tries Resend first; if Resend blocks the recipient (e.g. 403 domain error),
+ * instantly dispatches through Nodemailer so the user ALWAYS receives their email immediately!
  */
 async function dispatchMail(mailData, service = "resend") {
-  return await sendMailWithResend(mailData);
+  if (service === "resend" || !service) {
+    const res = await sendMailWithResend(mailData);
+    if (res.success) {
+      return res;
+    }
+    console.warn(`[hackathonMailer] Resend did not deliver to ${mailData.to} (${(res.error && res.error.message) || 'Error'}). Instantly falling back to Gmail SMTP...`);
+  }
+  return await sendMailWithNodemailer(mailData);
 }
 
 /**
