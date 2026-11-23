@@ -486,7 +486,7 @@
               <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
                 Required by i-Hub Security Cell for participants staying during the 36-hour sprint.
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                 <div>
                   <label for="regParentName" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Parent / Guardian Name <span class="req">*</span></label>
                   <input type="text" id="regParentName" class="input-control" placeholder="e.g. Rajesh Sharma" required />
@@ -495,6 +495,11 @@
                   <label for="regParentPhone" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Parent Mobile Number <span class="req">*</span></label>
                   <input type="tel" id="regParentPhone" class="input-control" placeholder="e.g. 9876543210" required />
                 </div>
+              </div>
+              <div>
+                <label for="regParentEmail" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Parent / Guardian Email Address (For Direct OTP Verification) <span class="req">*</span></label>
+                <input type="email" id="regParentEmail" class="input-control" placeholder="e.g. parent.guardian@example.com" required />
+                <span style="font-size: 11.5px; color: var(--text-subtle); margin-top: 4px; display: block;">A separate plain-text security code will be sent directly to your parent's email. Both codes must be verified.</span>
               </div>
             </div>
 
@@ -575,42 +580,65 @@
           </div>
         </div>
 
-        <!-- STEP 3: Security & OTP Verification -->
+        <!-- STEP 3: Security & Dual OTP Verification -->
         <div id="step3" class="hidden">
           <div class="otp-box">
             <span style="font-size: 36px;">🔐</span>
-            <h2 class="section-title" style="margin-top: 10px;">Security Email Verification</h2>
-            <p class="section-subtitle" style="margin-bottom: 6px;">
-              A 6-digit verification code has been dispatched to:
+            <h2 class="section-title" style="margin-top: 10px;">Security Dual-Email Verification</h2>
+            <p class="section-subtitle" style="margin-bottom: 16px;">
+              To confirm registration & parental consent, verification codes have been sent to both emails:
             </p>
-            <div class="otp-email-highlight" id="displayOtpEmail">user@example.com</div>
 
-            <!-- Demo / Local Hint Pill -->
-            <div class="demo-hint-box" id="demoHintBox" style="display: none;">
-              <div>
-                <strong>💡 Local Testing Code:</strong> <span id="demoOtpText" style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 14px;">-</span>
+            <!-- Verification Status Badges -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; text-align: left;">
+              <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px;">
+                <div style="font-size: 11px; font-weight: 700; color: #1e40af; text-transform: uppercase;">1. CANDIDATE EMAIL</div>
+                <div id="displayOtpEmail" style="font-size: 13px; font-weight: 700; color: #1e3a8a; word-break: break-all; margin-top: 2px;">user@example.com</div>
               </div>
-              <button type="button" class="btn-autofill-otp" onclick="autofillDemoOtp()">
-                📋 Auto-fill Code
-              </button>
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px;">
+                <div style="font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase;">2. PARENT / GUARDIAN EMAIL</div>
+                <div id="displayParentOtpEmail" style="font-size: 13px; font-weight: 700; color: #14532d; word-break: break-all; margin-top: 2px;">parent@example.com</div>
+              </div>
             </div>
 
-            <div class="otp-inputs">
-              <input type="text" maxlength="1" class="otp-digit" id="otp1" />
-              <input type="text" maxlength="1" class="otp-digit" id="otp2" />
-              <input type="text" maxlength="1" class="otp-digit" id="otp3" />
-              <input type="text" maxlength="1" class="otp-digit" id="otp4" />
-              <input type="text" maxlength="1" class="otp-digit" id="otp5" />
-              <input type="text" maxlength="1" class="otp-digit" id="otp6" />
+            <!-- Demo / Local Hint Pill -->
+            <div class="demo-hint-box" id="demoHintBox" style="display: none; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>💡 Local Candidate Code:</strong> <span id="demoOtpText" style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 13px;">-</span>
+                  &nbsp;|&nbsp;
+                  <strong>Parent Code:</strong> <span id="demoParentOtpText" style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 13px; color: #059669;">-</span>
+                </div>
+                <button type="button" class="btn-autofill-otp" onclick="autofillDemoOtp()">
+                  📋 Auto-fill Both
+                </button>
+              </div>
+            </div>
+
+            <!-- Dual Inputs Container -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; text-align: left;">
+              <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
+                <label style="font-size: 12px; font-weight: 800; color: #1e40af; display: block; margin-bottom: 6px;">
+                  CANDIDATE 6-DIGIT CODE <span class="req">*</span>
+                </label>
+                <input type="text" maxlength="6" id="candidateOtpInput" class="input-control" placeholder="123456" style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; text-align: center; letter-spacing: 4px;" required />
+              </div>
+
+              <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
+                <label style="font-size: 12px; font-weight: 800; color: #166534; display: block; margin-bottom: 6px;">
+                  PARENT / GUARDIAN CODE <span class="req">*</span>
+                </label>
+                <input type="text" maxlength="6" id="parentOtpInput" class="input-control" placeholder="654321" style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; text-align: center; letter-spacing: 4px; border-color: #86efac;" required />
+              </div>
             </div>
 
             <div class="timer-badge">
-              ⏳ Code expires in: <span id="countdown">10:00</span>
+              ⏳ Codes expire in: <span id="countdown">10:00</span>
             </div>
 
             <div>
               <button class="resend-btn" type="button" id="btnResend" onclick="resendOtp()">
-                Didn't receive code? Resend OTP
+                Didn't receive codes? Resend OTPs
               </button>
             </div>
           </div>
@@ -618,7 +646,7 @@
           <div class="btn-row">
             <button class="btn btn-secondary" type="button" onclick="goToStep(2)">← Edit Details</button>
             <button class="btn btn-primary" type="button" id="btnConfirmOtp" onclick="submitOtpAndFinalize()">
-              ✓ Confirm & Issue Pass
+              ✓ Verify Both & Issue Pass
             </button>
           </div>
         </div>
@@ -942,7 +970,14 @@
 
       const parentName = document.getElementById('regParentName').value.trim();
       const parentPhone = document.getElementById('regParentPhone').value.trim();
+      const parentEmail = document.getElementById('regParentEmail').value.trim();
       const securityAgreed = document.getElementById('regSecurityAgreed').checked;
+
+      if (!parentEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail)) {
+        showToast('Please enter a valid Parent / Guardian email address.', 'error');
+        document.getElementById('regParentEmail').focus();
+        return;
+      }
 
       if (!securityAgreed) {
         showToast('You must agree to the Campus Anti-Exit and Disqualification rule.', 'error');
@@ -956,7 +991,7 @@
       document.getElementById('revPartType').textContent = participationType === 'team' ? ('Team (' + (1 + teammates.length) + ' Members)') : 'Solo Innovator';
       document.getElementById('revTrack').textContent = selectedTrack;
       document.getElementById('revFood').textContent = document.getElementById('regFood').value;
-      document.getElementById('revParent').textContent = parentName ? (parentName + ' (' + parentPhone + ')') : 'Confirmed by Guardian';
+      document.getElementById('revParent').textContent = (parentName || 'Guardian') + ' (' + parentPhone + ' / ' + parentEmail + ')';
 
       const teamRow = document.getElementById('revTeamRow');
       if (participationType === 'team') {
@@ -991,10 +1026,11 @@
       const foodPreference = document.getElementById('regFood').value;
       const parentName = document.getElementById('regParentName').value.trim();
       const parentPhone = document.getElementById('regParentPhone').value.trim();
+      const parentEmail = document.getElementById('regParentEmail').value.trim().toLowerCase();
       const securityAgreed = document.getElementById('regSecurityAgreed').checked;
 
       btn.disabled = true;
-      btn.textContent = '⏳ Dispatching Code...';
+      btn.textContent = '⏳ Dispatching Verification Codes...';
 
       try {
         const payload = {
@@ -1012,6 +1048,7 @@
           foodPreference: foodPreference,
           parentName: parentName,
           parentPhone: parentPhone,
+          parentEmail: parentEmail,
           securityAgreed: securityAgreed,
         };
 
@@ -1025,10 +1062,13 @@
         if (data.success) {
           sessionToken = data.token;
           document.getElementById('displayOtpEmail').textContent = email;
+          document.getElementById('displayParentOtpEmail').textContent = parentEmail;
 
-          if (data.demoOtp) {
-            currentDemoOtp = data.demoOtp;
-            document.getElementById('demoOtpText').textContent = data.demoOtp;
+          if (data.demoCandidateOtp && data.demoParentOtp) {
+            currentDemoOtp = data.demoCandidateOtp;
+            currentDemoParentOtp = data.demoParentOtp;
+            document.getElementById('demoOtpText').textContent = data.demoCandidateOtp;
+            document.getElementById('demoParentOtpText').textContent = data.demoParentOtp;
             document.getElementById('demoHintBox').style.display = 'flex';
           } else {
             document.getElementById('demoHintBox').style.display = 'none';
@@ -1036,8 +1076,10 @@
 
           goToStep(3);
           startCountdown(data.expiresAt);
-          setupOtpInputBehavior();
-          showToast('✅ Verification code dispatched to ' + email, 'success');
+          document.getElementById('candidateOtpInput').value = '';
+          document.getElementById('parentOtpInput').value = '';
+          document.getElementById('candidateOtpInput').focus();
+          showToast('✅ Codes sent to ' + email + ' and ' + parentEmail, 'success');
         } else {
           showToast('❌ ' + (data.error || 'Failed to dispatch OTP'), 'error');
         }
@@ -1045,81 +1087,56 @@
         showToast('❌ Network error: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = '🔒 Send 6-Digit Verification Code';
+        btn.textContent = '🔒 Send Verification Codes';
       }
     }
 
+    let currentDemoParentOtp = '';
+
     function autofillDemoOtp() {
-      if (!currentDemoOtp) return;
-      const chars = currentDemoOtp.split('');
-      chars.forEach(function(c, idx) {
-        const el = document.getElementById('otp' + (idx + 1));
-        if (el) el.value = c;
-      });
+      if (currentDemoOtp) {
+        document.getElementById('candidateOtpInput').value = currentDemoOtp;
+      }
+      if (currentDemoParentOtp) {
+        document.getElementById('parentOtpInput').value = currentDemoParentOtp;
+      }
       document.getElementById('btnConfirmOtp').focus();
-      showToast('📋 Code auto-filled! Click "Confirm & Issue Pass".', 'success');
+      showToast('📋 Both Candidate & Parent codes auto-filled!', 'success');
     }
 
     async function resendOtp() {
       requestOtp();
     }
 
-    function setupOtpInputBehavior() {
-      const digits = [1, 2, 3, 4, 5, 6].map(function(i) { return document.getElementById('otp' + i); });
-      digits.forEach(function(el, idx) {
-        el.value = '';
-        el.oninput = function() {
-          if (el.value.length === 1 && idx < 5) digits[idx + 1].focus();
-        };
-        el.onkeydown = function(e) {
-          if (e.key === 'Backspace' && !el.value && idx > 0) digits[idx - 1].focus();
-          if (e.key === 'Enter') submitOtpAndFinalize();
-        };
-        el.onpaste = function(e) {
-          e.preventDefault();
-          const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
-          paste.split('').forEach(function(c, i) { if (digits[i]) digits[i].value = c; });
-          if (digits[paste.length - 1]) digits[paste.length - 1].focus();
-        };
-      });
-      digits[0].focus();
-    }
-
-    function startCountdown(expiresAt) {
-      if (countdownInterval) clearInterval(countdownInterval);
-      const timerEl = document.getElementById('countdown');
-
-      function update() {
-        const diff = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-        const m = Math.floor(diff / 60).toString().padStart(2, '0');
-        const s = (diff % 60).toString().padStart(2, '0');
-        timerEl.textContent = m + ':' + s;
-        if (diff <= 0) {
-          clearInterval(countdownInterval);
-          timerEl.textContent = 'Expired';
-        }
-      }
-      update();
-      countdownInterval = setInterval(update, 1000);
-    }
-
     async function submitOtpAndFinalize() {
       const btn = document.getElementById('btnConfirmOtp');
-      const otpCode = [1, 2, 3, 4, 5, 6].map(function(i) { return document.getElementById('otp' + i).value.trim(); }).join('');
+      const candidateOtp = document.getElementById('candidateOtpInput').value.trim();
+      const parentOtp = document.getElementById('parentOtpInput').value.trim();
 
-      if (otpCode.length !== 6) {
-        showToast('Please enter all 6 digits of your verification code.', 'error');
+      if (!candidateOtp || candidateOtp.length !== 6) {
+        showToast('Please enter the 6-digit Candidate verification code.', 'error');
+        document.getElementById('candidateOtpInput').focus();
+        return;
+      }
+
+      if (!parentOtp || parentOtp.length !== 6) {
+        showToast('Please enter the 6-digit Parent / Guardian verification code.', 'error');
+        document.getElementById('parentOtpInput').focus();
         return;
       }
 
       btn.disabled = true;
-      btn.textContent = '⏳ Verifying & Registering...';
+      btn.textContent = '⏳ Verifying Both Codes & Finalizing...';
 
       try {
         const res = await fetch('/portal/api/verify-and-register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: sessionToken, otp: otpCode }),
+          body: JSON.stringify({
+            token: sessionToken,
+            candidateOtp: candidateOtp,
+            parentOtp: parentOtp,
+          }),
         });
 
         const data = await res.json();
@@ -1139,7 +1156,7 @@
           document.getElementById('btnDownloadPassPdf').href = pdfUrl;
 
           goToStep(4);
-          showToast('🎉 Verification complete! Pass issued.', 'success');
+          showToast('🎉 Both Candidate & Parental codes verified! Pass issued.', 'success');
         } else {
           showToast('❌ ' + (data.error || 'Verification failed'), 'error');
         }
@@ -1147,7 +1164,7 @@
         showToast('❌ Network error: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = '✓ Confirm & Issue Pass';
+        btn.textContent = '✓ Verify Both & Issue Pass';
       }
     }
 

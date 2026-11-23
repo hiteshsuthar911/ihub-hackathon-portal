@@ -22,6 +22,8 @@ const {
   sendHackathonTeamInviteEmail,
   sendHackathonAcceptanceEmail,
   sendHackathonSubmissionEmail,
+  sendCandidatePlainTextOtp,
+  sendParentPlainTextOtp,
   sendHackathonOtpEmail,
   sendHackathonDossierEmail,
   sendHackathonShortlistEmail,
@@ -38,6 +40,7 @@ const {
   checkRateLimit,
   createOtpSession,
   verifyOtp,
+  verifyDualOtp,
   finalizeRegistration,
   findRegistration,
 } = require("./security");
@@ -317,15 +320,22 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── Portal API: Request OTP ──
+  // ── Portal API: Request Dual OTP (Candidate + Parent) ──
   if (pathname === "/portal/api/request-otp" && req.method === "POST") {
     try {
       const data = await parseJsonBody(req);
       const email = (data.email || "").trim().toLowerCase();
+      const parentEmail = (data.parentEmail || "").trim().toLowerCase();
 
       if (!isValidEmail(email)) {
         res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: "Please enter a valid email address." }));
+        res.end(JSON.stringify({ success: false, error: "Please enter a valid candidate email address." }));
+        return;
+      }
+
+      if (!isValidEmail(parentEmail)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: "Please enter a valid parent/guardian email address." }));
         return;
       }
 
@@ -342,32 +352,40 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      const rateCheckEmail = checkRateLimit(`otp:email:${email}`, 3, 5 * 60 * 1000);
-      if (!rateCheckEmail.allowed) {
-        res.writeHead(429, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: `Too many OTP requests. Please wait ${rateCheckEmail.retryAfterSeconds}s.` }));
-        return;
-      }
+      // Generate Dual OTP (Candidate + Parent)
+      const { token, rawCandidateOtp, rawParentOtp, expiresAt } = createOtpSession(email, data);
 
-      const { token, rawOtp, expiresAt } = createOtpSession(email, data);
-
-      await sendHackathonOtpEmail({
+      // 1. Dispatch Plain-Text OTP to Candidate
+      await sendCandidatePlainTextOtp({
         to: email,
         participantName: data.participantName,
-        code: rawOtp,
+        code: rawCandidateOtp,
         expiresInMinutes: 10,
         service: "nodemailer",
       });
 
-      console.log(`[Portal] Verification OTP generated for ${email}: ${rawOtp}`);
+      // 2. Dispatch Plain-Text OTP to Parent
+      await sendParentPlainTextOtp({
+        to: parentEmail,
+        parentName: data.parentName || "Parent / Guardian",
+        participantName: data.participantName,
+        code: rawParentOtp,
+        expiresInMinutes: 10,
+        service: "nodemailer",
+      });
+
+      console.log(`[Portal] Dual OTPs generated: Candidate (${email}) -> ${rawCandidateOtp} | Parent (${parentEmail}) -> ${rawParentOtp}`);
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({
         success: true,
         token,
         expiresAt,
-        demoOtp: rawOtp,
-        message: `Verification code sent to ${email}`,
+        demoCandidateOtp: rawCandidateOtp,
+        demoParentOtp: rawParentOtp,
+        candidateEmail: email,
+        parentEmail: parentEmail,
+        message: `Plain-text verification codes sent to Candidate (${email}) and Parent (${parentEmail})`,
       }));
     } catch (err) {
       res.writeHead(500, { "Content-Type": "application/json" });
@@ -376,19 +394,22 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── Portal API: Verify & Register ──
+  // ── Portal API: Verify Dual OTP & Register ──
   if (pathname === "/portal/api/verify-and-register" && req.method === "POST") {
     try {
       const data = await parseJsonBody(req);
-      const { token, otp } = data;
+      const { token, candidateOtp, parentOtp, otp } = data;
 
-      if (!token || !otp) {
+      const cOtp = candidateOtp || otp;
+      const pOtp = parentOtp || otp;
+
+      if (!token || !cOtp || !pOtp) {
         res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: "Missing session token or verification code." }));
+        res.end(JSON.stringify({ success: false, error: "Both Candidate OTP and Parent OTP are required." }));
         return;
       }
 
-      const verifyResult = verifyOtp(token, otp);
+      const verifyResult = verifyDualOtp(token, cOtp, pOtp);
       if (!verifyResult.success) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: verifyResult.error }));

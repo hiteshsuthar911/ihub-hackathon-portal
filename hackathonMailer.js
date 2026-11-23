@@ -80,30 +80,83 @@ async function sendHackathonApplicationInviteEmail({
 }
 
 /**
- * ── STAGE 2 OTP Email: Security 6-Digit Email Verification ──
+ * ── STAGE 2 OTP Email: Plain-Text Candidate Verification ──
+ * "make the mail format should be just simple text format and no design nothing"
  */
-async function sendHackathonOtpEmail({
+async function sendCandidatePlainTextOtp({
   to,
   participantName = "Innovator",
   code = "123456",
   expiresInMinutes = 10,
-  hackathonName = "i-Hub Gujarat Innovation Hackathon 2026",
   service = "resend",
 }) {
-  if (!to) throw new Error("Missing required 'to' email address");
+  if (!to) throw new Error("Missing recipient email");
 
-  const { html, text } = await renderEmail(HackathonOtpEmail, {
-    participantName,
-    code,
-    expiresInMinutes,
-    hackathonName,
-  });
+  const text = `i-Hub Gujarat Innovation Hackathon 2026
+Navrangpura, Ahmedabad
+
+Hello ${participantName},
+
+Your verification OTP is: ${code}
+
+This code is valid for ${expiresInMinutes} minutes.
+Enter this code along with your parent/guardian verification code on the registration portal to verify your application.
+
+If you did not request this, please ignore this email.
+
+--
+i-Hub Event Cell
+Gujarat Student Startup & Innovation Hub
+Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad 380015`;
 
   const mailData = {
     to,
-    subject: `🔒 ${code} is your i-Hub Hackathon Verification Code`,
+    subject: `Your i-Hub Hackathon Verification Code: ${code}`,
     text,
-    html,
+  };
+
+  return await dispatchMail(mailData, service);
+}
+
+/**
+ * ── STAGE 2 OTP Email: Plain-Text Parent / Guardian Verification ──
+ * Sent directly to parent's email address
+ */
+async function sendParentPlainTextOtp({
+  to,
+  parentName = "Parent / Guardian",
+  participantName = "Candidate",
+  code = "654321",
+  expiresInMinutes = 10,
+  service = "resend",
+}) {
+  if (!to) throw new Error("Missing parent email");
+
+  const text = `i-Hub Gujarat Innovation Hackathon 2026
+Navrangpura, Ahmedabad
+
+Dear ${parentName},
+
+Your child/ward, ${participantName}, is registering for the i-Hub Gujarat Innovation Hackathon (Dec 15 - 16, 2026).
+
+To verify your parental/guardian consent for overnight on-campus participation, please provide them with your security code:
+
+Your Parent Verification OTP is: ${code}
+
+This code is valid for ${expiresInMinutes} minutes.
+Both student code and parent code are required to complete the registration.
+
+If you have questions, contact us at hackathon@ihubgujarat.in.
+
+--
+i-Hub Event Cell
+Gujarat Student Startup & Innovation Hub
+Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad 380015`;
+
+  const mailData = {
+    to,
+    subject: `Parental Consent Verification Code for ${participantName}: ${code}`,
+    text,
   };
 
   return await dispatchMail(mailData, service);
@@ -310,7 +363,9 @@ async function sendHackathonTeamInviteEmail({
 module.exports = {
   dispatchMail,
   sendHackathonApplicationInviteEmail,
-  sendHackathonOtpEmail,
+  sendCandidatePlainTextOtp,
+  sendParentPlainTextOtp,
+  sendHackathonOtpEmail: sendCandidatePlainTextOtp,
   sendHackathonDossierEmail,
   sendHackathonShortlistEmail,
   sendHackathonFinalPassEmail,

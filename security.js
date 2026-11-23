@@ -95,66 +95,110 @@ function checkRateLimit(key, maxRequests = 5, windowMs = 60000) {
 }
 
 /**
- * Create a new OTP verification session
+ * Create a new Dual-OTP verification session (Candidate + Parent)
  */
-function createOtpSession(email, pendingData) {
-  const cleanEmail = email.trim().toLowerCase();
-  const rawOtp = generateOtp();
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hashedOtp = hashOtp(rawOtp, salt);
+function createOtpSession(candidateEmail, pendingData) {
+  const cleanCandidateEmail = candidateEmail.trim().toLowerCase();
+  const parentEmail = (pendingData.parentEmail || "").trim().toLowerCase();
+
+  const rawCandidateOtp = generateOtp();
+  const candidateSalt = crypto.randomBytes(16).toString("hex");
+  const hashedCandidateOtp = hashOtp(rawCandidateOtp, candidateSalt);
+
+  const rawParentOtp = generateOtp();
+  const parentSalt = crypto.randomBytes(16).toString("hex");
+  const hashedParentOtp = hashOtp(rawParentOtp, parentSalt);
+
   const token = generateSessionToken();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
   otpSessions.set(token, {
-    email: cleanEmail,
-    hashedOtp,
-    salt,
+    email: cleanCandidateEmail,
+    parentEmail: parentEmail || cleanCandidateEmail,
+    hashedCandidateOtp,
+    candidateSalt,
+    hashedParentOtp,
+    parentSalt,
     expiresAt,
     attempts: 0,
+    verifiedCandidate: false,
+    verifiedParent: false,
     verified: false,
     pendingData,
   });
 
-  return { token, rawOtp, expiresAt };
+  return {
+    token,
+    rawCandidateOtp,
+    rawParentOtp,
+    expiresAt,
+  };
 }
 
 /**
- * Verify submitted OTP against session token using timing-safe comparison
+ * Verify both candidate OTP and parent OTP against session token
  */
-function verifyOtp(token, submittedOtp) {
+function verifyDualOtp(token, candidateOtp, parentOtp) {
   const session = otpSessions.get(token);
 
   if (!session) {
-    return { success: false, error: "Invalid or expired session. Please request a new code." };
+    return { success: false, error: "Invalid or expired session. Please request new verification codes." };
   }
 
   if (Date.now() > session.expiresAt) {
     otpSessions.delete(token);
-    return { success: false, error: "Verification code has expired. Please request a new code." };
+    return { success: false, error: "Verification codes have expired. Please request new codes." };
   }
 
   if (session.attempts >= 5) {
     otpSessions.delete(token);
-    return { success: false, error: "Maximum attempts exceeded. Please request a new code." };
+    return { success: false, error: "Maximum attempts exceeded. Please request new verification codes." };
   }
 
   session.attempts += 1;
 
-  const candidateHash = hashOtp(submittedOtp.trim(), session.salt);
-  const isValid =
-    candidateHash.length === session.hashedOtp.length &&
-    crypto.timingSafeEqual(Buffer.from(candidateHash), Buffer.from(session.hashedOtp));
+  // 1. Verify Candidate OTP
+  const candHash = hashOtp(candidateOtp.trim(), session.candidateSalt);
+  const candValid =
+    candHash.length === session.hashedCandidateOtp.length &&
+    crypto.timingSafeEqual(Buffer.from(candHash), Buffer.from(session.hashedCandidateOtp));
 
-  if (isValid) {
-    session.verified = true;
-    return { success: true, email: session.email, pendingData: session.pendingData };
+  // 2. Verify Parent OTP
+  const parentHash = hashOtp(parentOtp.trim(), session.parentSalt);
+  const parentValid =
+    parentHash.length === session.hashedParentOtp.length &&
+    crypto.timingSafeEqual(Buffer.from(parentHash), Buffer.from(session.hashedParentOtp));
+
+  if (!candValid && !parentValid) {
+    const rem = 5 - session.attempts;
+    return { success: false, error: `Both Candidate OTP and Parent OTP are incorrect. ${rem} attempt(s) remaining.` };
   }
 
-  const remaining = 5 - session.attempts;
+  if (!candValid) {
+    const rem = 5 - session.attempts;
+    return { success: false, error: `Candidate verification code is incorrect. ${rem} attempt(s) remaining.` };
+  }
+
+  if (!parentValid) {
+    const rem = 5 - session.attempts;
+    return { success: false, error: `Parent / Guardian verification code is incorrect. ${rem} attempt(s) remaining.` };
+  }
+
+  session.verified = true;
+  session.verifiedCandidate = true;
+  session.verifiedParent = true;
+
   return {
-    success: false,
-    error: `Incorrect code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`,
+    success: true,
+    email: session.email,
+    parentEmail: session.parentEmail,
+    pendingData: session.pendingData,
   };
+}
+
+// Keep verifyOtp for backwards compatibility
+function verifyOtp(token, submittedOtp) {
+  return verifyDualOtp(token, submittedOtp, submittedOtp);
 }
 
 /**
@@ -203,9 +247,11 @@ async function finalizeRegistration(token) {
     securityAgreed: Boolean(session.pendingData.securityAgreed !== false),
     parentalApproval: {
       parentName: sanitize(session.pendingData.parentName || (session.pendingData.parentalApproval && session.pendingData.parentalApproval.parentName) || ""),
+      parentEmail: sanitize(session.pendingData.parentEmail || (session.pendingData.parentalApproval && session.pendingData.parentalApproval.parentEmail) || ""),
       parentPhone: sanitize(session.pendingData.parentPhone || (session.pendingData.parentalApproval && session.pendingData.parentalApproval.parentPhone) || ""),
       relationship: sanitize(session.pendingData.relationship || (session.pendingData.parentalApproval && session.pendingData.parentalApproval.relationship) || "Guardian"),
       agreed: Boolean(session.pendingData.parentAgreed !== false),
+      verifiedByOtp: true,
     },
     status: "Registered",
     rsvpToken,
@@ -237,6 +283,7 @@ module.exports = {
   checkRateLimit,
   createOtpSession,
   verifyOtp,
+  verifyDualOtp,
   finalizeRegistration,
   findRegistration,
 };
