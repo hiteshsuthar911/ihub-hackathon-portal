@@ -13,7 +13,7 @@ function HackathonFinalPassEmail({
   track = "AI, Generative Agents & Automation",
   boothNumber = "Lab 3 - Table B-14",
   foodPreference = "Pure Vegetarian",
-  checkInTime = "Friday, Dec 12, 2026 @ 08:30 AM IST",
+  checkInTime = "Monday, Dec 15, 2026 @ 09:00 AM IST",
   hackathonName = "i-Hub Gujarat Innovation Hackathon 2026",
   venue = "i-Hub Campus, Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad 380015",
   emergencyContact = "+91 79 2630 0000 / +91 98765 43210",
@@ -298,7 +298,7 @@ function HackathonFinalPassEmail({
                             color: "#0f172a",
                           },
                         },
-                        "⏱️ 36-Hour Minute-by-Minute Schedule"
+                        "⏱️ 27.5-Hour Minute-by-Minute Schedule (Dec 15 - 16)"
                       ),
                       React.createElement(
                         "table",
@@ -319,14 +319,15 @@ function HackathonFinalPassEmail({
                           "tbody",
                           null,
                           [
-                            { time: "Dec 12, 08:30 AM", event: "Security Gate Clearance & Kit Bag Collection" },
-                            { time: "Dec 12, 10:30 AM", event: "Opening Ceremony & Problem Statement Deep-Dive" },
-                            { time: "Dec 12, 11:30 AM", event: "HACKING COMMENCES (36-Hour Non-stop Clock Starts)" },
-                            { time: "Dec 12, 08:00 PM", event: "Dinner & Mentor Review Round 1" },
-                            { time: "Dec 13, 02:00 AM", event: "Midnight RedBull & Snacks Sprint" },
-                            { time: "Dec 13, 10:00 AM", event: "Jury Milestone Evaluation Round 2" },
-                            { time: "Dec 13, 11:30 PM", event: "HACKATHON CODE FREEZE (Devpost Submissions)" },
-                            { time: "Dec 14, 10:00 AM", event: "Grand Pitching Finale & Award Ceremony (₹10L+ Grants)" },
+                            { time: "Dec 15, 09:00 AM", event: "Security Gate Clearance & Biometric Check-in" },
+                            { time: "Dec 15, 10:30 AM", event: "Keynote & Problem Statements Released" },
+                            { time: "Dec 15, 11:00 AM", event: "ROUND 1: HACKING COMMENCES (Sprint Clock Starts)" },
+                            { time: "Dec 15, 04:30 PM", event: "ROUND 2: Architecture & Mentorship Review" },
+                            { time: "Dec 15, 08:30 PM", event: "Dinner & Mentor Progress Sign-off" },
+                            { time: "Dec 16, 02:00 AM", event: "ROUND 3: Midnight Jury Screening (Elimination Cut)" },
+                            { time: "Dec 16, 09:30 AM", event: "HACKATHON CODE FREEZE (Devpost Submissions Locked)" },
+                            { time: "Dec 16, 10:30 AM", event: "ROUND 4: Grand Pitching Finale before VC Jury" },
+                            { time: "Dec 16, 12:30 PM", event: "Awards Ceremony & ₹10L+ Grants Handover" },
                           ].map((item, idx) =>
                             React.createElement(
                               "tr",

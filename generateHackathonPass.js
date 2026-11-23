@@ -29,7 +29,7 @@ function generateHackathonPass(data = {}) {
     const team = data.teamName || "NeuralVoyage";
     const track = data.track || "AI, Generative Agents & Automation";
     const hackathon = data.hackathonName || "i-Hub Gujarat Innovation Hackathon 2026";
-    const dates = data.eventDate || "December 12 - 14, 2026 (36 Hours)";
+    const dates = data.eventDate || "December 15, 09:00 AM – December 16, 12:30 PM";
     const venue = data.venue || "i-Hub Ahmedabad, Prajna Puram, KCG Campus, Opp. PRL, Navrangpura, Ahmedabad, Gujarat 380015";
 
     // ── Outer Background (Crisp Light Slate) ──
