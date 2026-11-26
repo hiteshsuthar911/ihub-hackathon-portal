@@ -25,6 +25,7 @@ const {
   generateOfficialHackerPassPdf,
   generateDelhiSaasNominationPdf,
   generateProjectStage1MeritPdf,
+  generateStateRoundClearanceCertificate,
 } = require("./generateHackathonDossier");
 
 /**
@@ -507,6 +508,87 @@ In Joint Mission with MeitY Startup Hub, New Delhi`;
   return await dispatchMail(mailData, service);
 }
 
+async function sendStateRoundCertificateEmail({
+  to,
+  participantName,
+  registrationId,
+  college,
+  track,
+  stateRank = "04",
+  score = "94.5 / 100",
+  percentile = "Top 2%",
+  eventDate = "21 November 2026",
+  service = "resend",
+}) {
+  const cleanName    = participantName.replace(/&amp;/g, "&").replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+  const cleanCollege = college.replace(/&amp;/g, "&").replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+  const cleanTrack   = track.replace(/&amp;/g, "&").replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+  const dateStr      = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+
+  const certPdf = await generateStateRoundClearanceCertificate({
+    participantName: cleanName,
+    registrationId,
+    college: cleanCollege,
+    track: cleanTrack,
+    stateRank,
+    score,
+    percentile,
+    eventDate,
+  });
+
+  const text =
+`GOVERNMENT OF GUJARAT
+Gujarat Student Startup & Innovation Hub (i-Hub)
+Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad - 380015
+
+OFFICIAL STATE ROUND CLEARANCE CERTIFICATE
+Reference: ${registrationId} / IHUB/STATE-ROUND/CLR/2026/0421
+Date of Issue: ${dateStr}
+
+Dear ${cleanName},
+
+We are pleased to officially inform you that you have SUCCESSFULLY CLEARED the State Round of the i-Hub Gujarat Innovation Hackathon 2026.
+
+STATE ROUND RESULT:
+  Score         : ${score}
+  State Rank    : #${stateRank}
+  Merit Percentile: ${percentile}
+  Result Status : CLEARED — QUALIFIED FOR NATIONAL ALL-INDIA ROUND
+
+Your official State Round Clearance Certificate is attached to this email as a PDF document. This certificate confirms your qualification into the National (All-India) Round of the i-Hub Gujarat Innovation Hackathon 2026 and your deputation as a State Innovation Fellow.
+
+NEXT STEPS:
+1. Review the attached certificate (2 pages) for full details of entitlements.
+2. The consolidated All-India National Merit Rank List and Stage 2 VC Pitch schedule will be dispatched to this email address.
+3. Ensure your registered email is monitored at all times for further communications.
+
+Attached: i-Hub_State_Round_Clearance_Certificate_${registrationId}.pdf (Official, 2 Pages)
+
+Sincerely,
+Director of Innovation & Research
+Gujarat Student Startup & Innovation Hub (i-Hub)
+Government of Gujarat`;
+
+  const html = `<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #111827; max-width: 650px; margin: 0 auto; padding: 20px 0;">
+<pre style="font-family: inherit; font-size: inherit; white-space: pre-wrap; margin: 0; line-height: 1.6; color: #111827;">${text}</pre>
+</div>`;
+
+  const mailData = {
+    to,
+    subject: `Official State Round Clearance Certificate [${registrationId}] - i-Hub Gujarat`,
+    text,
+    html,
+    attachments: [
+      {
+        filename: `i-Hub_State_Round_Clearance_Certificate_${registrationId}.pdf`,
+        content: certPdf,
+      },
+    ],
+  };
+
+  return await dispatchMail(mailData, service);
+}
+
 module.exports = {
   dispatchMail,
   sendHackathonApplicationInviteEmail,
@@ -518,5 +600,6 @@ module.exports = {
   sendHackathonFinalPassEmail,
   sendHackathonTeamInviteEmail,
   sendNationalCohortSelectionEmail,
+  sendStateRoundCertificateEmail,
   sendHackathonRegistrationEmail: sendHackathonDossierEmail, // alias for backwards compatibility
 };

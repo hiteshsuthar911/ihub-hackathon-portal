@@ -1429,6 +1429,240 @@ async function generateProjectStage1MeritPdf(data = {}) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. STATE ROUND CLEARANCE CERTIFICATE
+// ─────────────────────────────────────────────────────────────────────────────
+function generateStateRoundClearanceCertificate({
+  participantName,
+  registrationId,
+  college,
+  track,
+  stateRank = "04",
+  score = "94.5 / 100",
+  percentile = "Top 2%",
+  eventDate = "21 November 2026",
+  certRefSuffix = "0421",
+}) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const name  = cleanText(participantName);
+      const regId = cleanText(registrationId);
+      const col   = cleanText(college);
+      const trk   = cleanText(track);
+
+      const certRef = `IHUB/STATE-ROUND/CLR/2026/${certRefSuffix}`;
+      const dateStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+
+      const [barcodeBuf, qrBuf] = await Promise.all([
+        createBarcodeBuffer(regId),
+        createQrCodeBuffer(`https://ihub-hackathon-portal.onrender.com/verify?ref=${certRef}&id=${regId}`),
+      ]);
+
+      const doc = new PDFDocument({ margin: 35, size: "A4", autoFirstPage: true });
+      const chunks = [];
+      doc.on("data", c => chunks.push(c));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      // ══════════════════════════════════════════════════════════════════════
+      // PAGE 1 (autoFirstPage:true creates it automatically)
+      // ══════════════════════════════════════════════════════════════════════
+      drawSimplePageFrame(doc, 1, 2, regId, certRef, "STATE ROUND CLEARANCE CERTIFICATE");
+
+      // ── Letterhead (y: 85–136) ──────────────────────────────────────────
+      doc.font("Helvetica-Bold").fontSize(11).fillColor("#000000")
+         .text("GOVERNMENT OF GUJARAT", 45, 85, { align: "center", width: 505 });
+      doc.font("Helvetica-Bold").fontSize(10).fillColor("#000000")
+         .text("GUJARAT STUDENT STARTUP & INNOVATION HUB (i-HUB)", 45, 100, { align: "center", width: 505 });
+      doc.font("Helvetica").fontSize(8).fillColor("#000000")
+         .text("Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad - 380015, Gujarat, India", 45, 113, { align: "center", width: 505 });
+      doc.font("Helvetica").fontSize(8).fillColor("#000000")
+         .text(`CERT REF: ${certRef}  |  Date of Issue: ${dateStr}`, 45, 124, { align: "center", width: 505 });
+      doc.moveTo(45, 136).lineTo(550, 136).lineWidth(1).strokeColor("#000000").stroke();
+
+      // ── Title (y: 142–176) ───────────────────────────────────────────────
+      doc.font("Helvetica-Bold").fontSize(13).fillColor("#000000")
+         .text("OFFICIAL STATE ROUND CLEARANCE CERTIFICATE", 45, 142, { align: "center", width: 505 });
+      doc.font("Helvetica").fontSize(9).fillColor("#000000")
+         .text("i-Hub Gujarat Innovation Hackathon 2026  -  Stage 2 State Qualifier", 45, 158, { align: "center", width: 505 });
+      doc.moveTo(45, 171).lineTo(550, 171).lineWidth(0.5).strokeColor("#000000").stroke();
+
+      // ── Proclamation box (y: 178–244) ───────────────────────────────────
+      doc.rect(45, 178, 505, 64).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.font("Helvetica").fontSize(8).fillColor("#000000").text(
+        `This is to formally certify, in accordance with the official records maintained by the Gujarat Student ` +
+        `Startup & Innovation Hub (i-Hub), that the candidate named below has SUCCESSFULLY CLEARED the State ` +
+        `Elimination Round of the i-Hub Gujarat Innovation Hackathon 2026, conducted on ${eventDate} at i-Hub ` +
+        `Campus, Navrangpura, Ahmedabad. The candidate has ranked within the ${percentile} of all state-level ` +
+        `participants and has accordingly been qualified into the National Round of the said Hackathon.`,
+        54, 185, { width: 487, lineGap: 1 }
+      );
+
+      // ── Section 1: Candidate Table (y: 250–404) ─────────────────────────
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#000000")
+         .text("SECTION 1: QUALIFIED CANDIDATE RECORD", 45, 250);
+      doc.moveTo(45, 261).lineTo(550, 261).lineWidth(0.5).strokeColor("#000000").stroke();
+
+      const rH = 20;
+      const tY  = 265;
+      const tableData = [
+        { l: "CANDIDATE NAME:",        v: name.toUpperCase(),                                              f: "Courier-Bold" },
+        { l: "REGISTRATION ID:",       v: regId,                                                           f: "Courier-Bold" },
+        { l: "COLLEGE / INSTITUTION:", v: col },
+        { l: "CHALLENGE TRACK:",       v: trk },
+        { l: "TECHNICAL SCORE:",       v: `${score}  (Grade: Exemplary)` },
+        { l: "STATE MERIT RANK:",      v: `State Rank #${stateRank}  |  Merit Percentile: ${percentile}`, f: "Courier-Bold" },
+        { l: "RESULT STATUS:",         v: "CLEARED - QUALIFIED FOR NATIONAL ALL-INDIA ROUND",              f: "Courier-Bold" },
+      ];
+      doc.rect(45, tY, 505, rH * tableData.length).lineWidth(0.5).strokeColor("#000000").stroke();
+      tableData.forEach((row, i) => {
+        const cy = tY + i * rH;
+        if (i > 0) doc.moveTo(45, cy).lineTo(550, cy).lineWidth(0.5).strokeColor("#000000").stroke();
+        doc.moveTo(215, cy).lineTo(215, cy + rH).lineWidth(0.5).strokeColor("#000000").stroke();
+        doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#000000").text(row.l, 52, cy + 6);
+        doc.font(row.f || "Helvetica").fontSize(7.5).fillColor("#000000").text(row.v, 222, cy + 6, { width: 322, ellipsis: true });
+      });
+      // tableData.length * rH = 7*20=140. tY+140 = 265+140 = 405
+
+      // ── Barcode + QR (y: 411–488) ───────────────────────────────────────
+      doc.rect(45, 411, 505, 72).lineWidth(0.5).strokeColor("#000000").stroke();
+      if (barcodeBuf) {
+        doc.image(barcodeBuf, 58, 420, { width: 290, height: 42 });
+        doc.font("Helvetica").fontSize(6.5).fillColor("#000000")
+           .text("Official State Clearance Barcode - Certified by i-Hub Gujarat Admissions Cell", 58, 468);
+      }
+      if (qrBuf) {
+        doc.image(qrBuf, 420, 415, { width: 62, height: 62 });
+        doc.font("Helvetica").fontSize(6).fillColor("#000000")
+           .text("Verification QR", 420, 479, { align: "center", width: 62 });
+      }
+
+      // ── Section 2: Score Table (y: 495–620) ─────────────────────────────
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#000000")
+         .text("SECTION 2: EVALUATION PERFORMANCE SUMMARY", 45, 495);
+      doc.moveTo(45, 506).lineTo(550, 506).lineWidth(0.5).strokeColor("#000000").stroke();
+
+      const eRows = [
+        { crit: "Technical Architecture & System Design",  weight: "30 Marks", sc: "28.5 / 30" },
+        { crit: "Algorithm & Real-time Problem Solving",   weight: "30 Marks", sc: "29.0 / 30" },
+        { crit: "Commercial Viability & SaaS Scalability", weight: "30 Marks", sc: "27.5 / 30" },
+        { crit: "Code Quality, Security & Test Coverage",  weight: "10 Marks", sc:  "9.5 / 10" },
+        { crit: "CUMULATIVE STATE ROUND SCORE",            weight: "100 Marks", sc: score },
+      ];
+      const eRH = 18;
+      const eHeaderH = 16;
+      const eTotalH = eHeaderH + eRows.length * eRH;
+      const eY = 510;
+      doc.rect(45, eY, 505, eTotalH).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.moveTo(305, eY).lineTo(305, eY + eTotalH).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.moveTo(405, eY).lineTo(405, eY + eTotalH).lineWidth(0.5).strokeColor("#000000").stroke();
+
+      // Header
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#000000").text("EVALUATION CRITERION", 52, eY + 4);
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#000000").text("WEIGHTAGE", 312, eY + 4);
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#000000").text("SCORE AWARDED", 412, eY + 4);
+      doc.moveTo(45, eY + eHeaderH).lineTo(550, eY + eHeaderH).lineWidth(0.5).strokeColor("#000000").stroke();
+
+      eRows.forEach((er, i) => {
+        const ry = eY + eHeaderH + i * eRH;
+        if (i > 0) doc.moveTo(45, ry).lineTo(550, ry).lineWidth(0.5).strokeColor("#000000").stroke();
+        const f = i === eRows.length - 1 ? "Helvetica-Bold" : "Helvetica";
+        doc.font(f).fontSize(7.5).fillColor("#000000").text(er.crit, 52, ry + 4);
+        doc.font(f).fontSize(7.5).fillColor("#000000").text(er.weight, 312, ry + 4);
+        doc.font("Courier-Bold").fontSize(7.5).fillColor("#000000").text(er.sc, 412, ry + 4);
+      });
+      // eY + eTotalH = 510 + 16 + 5*18 = 510 + 106 = 616. Well within 788.
+
+      // ══════════════════════════════════════════════════════════════════════
+      // PAGE 2
+      // ══════════════════════════════════════════════════════════════════════
+      doc.addPage();
+      drawSimplePageFrame(doc, 2, 2, regId, certRef, "STATE ROUND CLEARANCE CERTIFICATE");
+
+      // ── Section 3: Entitlements (y: 85–241) ─────────────────────────────
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#000000")
+         .text("SECTION 3: ENTITLEMENTS & PRIVILEGES CONFERRED BY STATE ROUND CLEARANCE", 45, 85);
+      doc.moveTo(45, 96).lineTo(550, 96).lineWidth(0.5).strokeColor("#000000").stroke();
+
+      const ents = [
+        { no: "01", t: "Qualification to National All-India Round",         d: "The candidate is hereby qualified for the National Round of i-Hub Gujarat Innovation Hackathon 2026, to be conducted in New Delhi, subject to Stage 2 prerequisites." },
+        { no: "02", t: "Official Delhi Innovation & SaaS Camp Deputation",  d: "By virtue of State Rank #04, the candidate has been nominated as a State Innovation Fellow for the Delhi Innovation & SaaS Acceleration Bootcamp (fully government-sponsored)." },
+        { no: "03", t: "All-India Merit List Dispatch",                     d: "The consolidated National Merit Rank List and Stage 2 VC Pitch schedule will be dispatched directly to the candidate's registered email address." },
+        { no: "04", t: "Enterprise Cloud Credits Entitlement",              d: "Candidate is eligible for USD 5,000 enterprise cloud credits (AWS / GCP / Azure) for prototyping and staging deployment for the National Round." },
+        { no: "05", t: "Letter of Achievement for Academic Portfolio",      d: "This certificate may be used as an official letter of achievement in academic records, scholarship applications, and internship/placement portfolios." },
+      ];
+      const entRH = 26;
+      const entY  = 100;
+      doc.rect(45, entY, 505, ents.length * entRH).lineWidth(0.5).strokeColor("#000000").stroke();
+      ents.forEach((en, i) => {
+        const ey = entY + i * entRH;
+        if (i > 0) doc.moveTo(45, ey).lineTo(550, ey).lineWidth(0.5).strokeColor("#000000").stroke();
+        doc.font("Courier-Bold").fontSize(8).fillColor("#000000").text(en.no, 52, ey + 4);
+        doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#000000").text(en.t, 70, ey + 4);
+        doc.font("Helvetica").fontSize(7).fillColor("#000000").text(en.d, 70, ey + 14, { width: 472 });
+      });
+      // entY + 5*26 = 100 + 130 = 230
+
+      // ── Section 4: Conditions (y: 240–342) ──────────────────────────────
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#000000")
+         .text("SECTION 4: CONDITIONS OF VALIDITY & STATUTORY OBLIGATIONS", 45, 240);
+      doc.moveTo(45, 251).lineTo(550, 251).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.rect(45, 255, 505, 82).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.font("Helvetica").fontSize(7.5).fillColor("#000000").text(
+        "1. This certificate is valid exclusively for the i-Hub Gujarat Innovation Hackathon 2026 programme and is non-transferable.\n" +
+        "2. This clearance is conditional upon the candidate complying with all Stage 2 submission requirements within the stipulated timeline.\n" +
+        "3. Any misrepresentation of project authorship, code plagiarism, or breach of Intellectual Property norms will render this certificate null and void.\n" +
+        "4. The final National Merit Rank is subject to Stage 2 evaluation and may supersede the State Rank herein.\n" +
+        "5. This document may be verified digitally using the QR code on Page 1 or at ihub-hackathon-portal.onrender.com.",
+        54, 263, { width: 487, lineGap: 1 }
+      );
+
+      // ── Section 5: Signature Block (y: 348–472) ──────────────────────────
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#000000")
+         .text("SECTION 5: OFFICIAL ATTESTATION & SIGNATURES", 45, 350);
+      doc.moveTo(45, 361).lineTo(550, 361).lineWidth(0.5).strokeColor("#000000").stroke();
+
+      doc.rect(45, 365, 505, 100).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.moveTo(220, 365).lineTo(220, 465).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.moveTo(395, 365).lineTo(395, 465).lineWidth(0.5).strokeColor("#000000").stroke();
+
+      // Sig 1
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#000000").text("JURY CHAIRMAN", 52, 374);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#000000").text("State Evaluation Committee\ni-Hub Gujarat Innovation Hackathon 2026", 52, 386, { width: 160 });
+      doc.font("Courier-Bold").fontSize(7).fillColor("#000000").text("CLEARED - STATE ROUND", 52, 416);
+      doc.moveTo(52, 445).lineTo(207, 445).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.font("Helvetica").fontSize(6.5).fillColor("#000000").text("Authorized Signature", 52, 448, { width: 160 });
+
+      // Sig 2
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#000000").text("DIRECTOR OF INNOVATION", 228, 374);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#000000").text("Gujarat Student Startup &\nInnovation Hub (i-Hub)", 228, 386, { width: 160 });
+      doc.font("Courier-Bold").fontSize(7).fillColor("#000000").text("QUALIFIED - NATIONAL ROUND", 228, 416);
+      doc.moveTo(228, 445).lineTo(382, 445).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.font("Helvetica").fontSize(6.5).fillColor("#000000").text("Authorized Signature", 228, 448, { width: 160 });
+
+      // Seal box
+      doc.rect(408, 373, 120, 84).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.font("Helvetica-Bold").fontSize(7).fillColor("#000000")
+         .text("GOVERNMENT OF GUJARAT\nOFFICIAL SEAL\n\ni-Hub Ahmedabad\nInnovation Directorate\n\nEMBOSSED SEAL", 408, 383, { align: "center", width: 120, lineGap: 2 });
+
+      // ── Closing Declaration (y: 478–520) ─────────────────────────────────
+      doc.rect(45, 478, 505, 38).lineWidth(0.5).strokeColor("#000000").stroke();
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#000000").text("OFFICIAL DECLARATION", 54, 485);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#000000")
+         .text(
+           `Issued under the authority of the Gujarat Student Startup & Innovation Hub (i-Hub), Government of Gujarat. ` +
+           `This certificate bears the official record of clearance of ${name.toUpperCase()} (Reg. ID: ${regId}) from ` +
+           `the State Round of i-Hub Gujarat Innovation Hackathon 2026.  |  Issued: ${dateStr}`,
+           54, 496, { width: 487 }
+         );
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 module.exports = {
   generateRegistrationReceiptPdf,
   generateFoodPassPdf,
@@ -1437,5 +1671,6 @@ module.exports = {
   generateOfficialHackerPassPdf,
   generateDelhiSaasNominationPdf,
   generateProjectStage1MeritPdf,
+  generateStateRoundClearanceCertificate,
   generateHackathonPass: generateOfficialHackerPassPdf, // backwards compatibility
 };
