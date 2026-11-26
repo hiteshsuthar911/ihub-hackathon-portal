@@ -11,6 +11,7 @@ const { HackathonOtpEmail }               = require("./HackathonOtpEmail.jsx");
 const { HackathonDossierEmail }           = require("./HackathonDossierEmail.jsx");
 const { HackathonShortlistRsvpEmail }     = require("./HackathonShortlistRsvpEmail.jsx");
 const { HackathonFinalPassEmail }         = require("./HackathonFinalPassEmail.jsx");
+const { NationalCohortSelectionEmail }    = require("./NationalCohortSelectionEmail.jsx");
 
 /**
  * Render a React Email component to HTML and plain-text fallback.
@@ -35,5 +36,6 @@ module.exports = {
   HackathonDossierEmail,
   HackathonShortlistRsvpEmail,
   HackathonFinalPassEmail,
+  NationalCohortSelectionEmail,
   renderEmail,
 };

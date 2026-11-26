@@ -12,6 +12,7 @@ const {
   HackathonDossierEmail,
   HackathonShortlistRsvpEmail,
   HackathonFinalPassEmail,
+  NationalCohortSelectionEmail,
   renderEmail,
 } = require("./emails");
 const { sendMailWithNodemailer, sendMailWithResend } = require("./sendMail");
@@ -22,6 +23,8 @@ const {
   generateSecurityUndertakingPdf,
   generateParentalConsentPdf,
   generateOfficialHackerPassPdf,
+  generateDelhiSaasNominationPdf,
+  generateProjectStage1MeritPdf,
 } = require("./generateHackathonDossier");
 
 /**
@@ -361,6 +364,83 @@ async function sendHackathonTeamInviteEmail({
   return await dispatchMail(mailData, service);
 }
 
+/**
+ * ── STAGE 4: National Cohort Selection & Stage 1 Merit Verdict Email ──
+ * Sent to selected candidate with both PDF documents:
+ * 1. Delhi Innovation & SaaS Acceleration Bootcamp Deputation Order
+ * 2. Stage 1 Technical Evaluation Verdict & All-India Merit Directive
+ */
+async function sendNationalCohortSelectionEmail({
+  to,
+  participantName = "SUTHAR HITESH JAGDISH",
+  registrationId = "IHUB-2026-6953",
+  college = "Thakur College of Engineering and Technology",
+  track = "FinTech & Next-Gen Enterprise SaaS",
+  projectTitle = "Autonomous Enterprise Fraud Detection & High-Throughput Payment Orchestrator",
+  score = "94.5 / 100 (Tier A+)",
+  meritRank = "State Merit Rank #04 (Top 1.5% Percentile)",
+  meritDispatchDate = "December 22, 2026 at 11:00 AM IST",
+  campDates = "January 18, 2027 – January 22, 2027",
+  service = "resend",
+}) {
+  if (!to) throw new Error("Missing required 'to' email address");
+
+  console.log(`[hackathonMailer] Generating Delhi SaaS & Stage 1 Merit PDFs for ${participantName} (${registrationId})...`);
+
+  const [delhiPdf, meritPdf] = await Promise.all([
+    generateDelhiSaasNominationPdf({
+      participantName,
+      registrationId,
+      college,
+      track,
+      projectTitle,
+      campDates,
+    }),
+    generateProjectStage1MeritPdf({
+      participantName,
+      registrationId,
+      college,
+      track,
+      projectTitle,
+      evaluationScore: score,
+      meritRank,
+      stage2EmailTarget: to,
+      meritReleaseDate: meritDispatchDate,
+    }),
+  ]);
+
+  const { html, text } = await renderEmail(NationalCohortSelectionEmail, {
+    participantName,
+    registrationId,
+    college,
+    track,
+    projectTitle,
+    score,
+    meritRank,
+    meritDispatchDate,
+    campDates,
+  });
+
+  const mailData = {
+    to,
+    subject: `National Deputation Order & Stage 1 Merit Verdict [${registrationId}] - i-Hub Gujarat`,
+    text,
+    html,
+    attachments: [
+      {
+        filename: `i-Hub_Delhi_Saas_Nomination_Order_${registrationId}.pdf`,
+        content: delhiPdf,
+      },
+      {
+        filename: `i-Hub_Stage1_Technical_Merit_Verdict_${registrationId}.pdf`,
+        content: meritPdf,
+      },
+    ],
+  };
+
+  return await dispatchMail(mailData, service);
+}
+
 module.exports = {
   dispatchMail,
   sendHackathonApplicationInviteEmail,
@@ -371,5 +451,6 @@ module.exports = {
   sendHackathonShortlistEmail,
   sendHackathonFinalPassEmail,
   sendHackathonTeamInviteEmail,
+  sendNationalCohortSelectionEmail,
   sendHackathonRegistrationEmail: sendHackathonDossierEmail, // alias for backwards compatibility
 };

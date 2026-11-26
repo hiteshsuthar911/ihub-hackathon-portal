@@ -1100,11 +1100,413 @@ async function generateOfficialHackerPassPdf(data = {}) {
   });
 }
 
+/**
+ * ============================================================================
+ * 6. OFFICIAL NOMINATION & STATE DEPUTATION ORDER - DELHI INNOVATION & SAAS CAMP (2 PAGES)
+ * ============================================================================
+ */
+async function generateDelhiSaasNominationPdf(data = {}) {
+  const name = cleanText(data.participantName || "SUTHAR HITESH JAGDISH");
+  const regId = cleanText(data.registrationId || "IHUB-DELHI-SAAS-2026-084");
+  const college = cleanText(data.college || "Thakur College of Engineering and Technology");
+  const track = cleanText(data.track || "FinTech & Next-Gen Enterprise SaaS");
+  const projectTitle = cleanText(data.projectTitle || "Autonomous Enterprise Fraud Detection & High-Throughput Payment Orchestrator");
+  const campDates = cleanText(data.campDates || "January 18, 2027 – January 22, 2027 (5-Day Residential)");
+  const campVenue = cleanText(data.campVenue || "MeitY Innovation Complex, Electronics Niketan, CGO Complex, Lodhi Road, New Delhi 110003");
+  const dateStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
+  const [barcodeBuf, qrBuf] = await Promise.all([
+    createBarcodeBuffer(`${regId}|DELHI-SAAS|NOMINATED`),
+    createQrCodeBuffer(`https://ihubgujarat.in/verify/delhi-cohort/${regId}`),
+  ]);
+
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 30, size: "A4", autoFirstPage: true });
+    const buffers = [];
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
+
+    // ──────────────────────── PAGE 1 ────────────────────────
+    drawPageFrame(doc, 1, 2, regId, "IHUB-DELHI-DEP-06", "DELHI INNOVATION & SAAS ACCELERATION NOMINATION");
+
+    // Header
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT & MINISTRY OF ELECTRONICS & IT (MeitY)", 45, 48, { align: "center", width: 505 });
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#334155").text("GUJARAT STUDENT STARTUP & INNOVATION HUB (i-HUB) IN PARTNERSHIP WITH MeitY STARTUP HUB", 45, 62, { align: "center", width: 505 });
+    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("National Innovation & SaaS Fellowship Mission | Electronics Niketan, Lodhi Road, New Delhi & Ahmedabad", 45, 75, { align: "center", width: 505 });
+
+    doc.moveTo(45, 88).lineTo(550, 88).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 91).lineTo(550, 91).lineWidth(0.5).strokeColor("#94a3b8").stroke();
+
+    // Document Ref & Date
+    doc.font("Courier-Bold").fontSize(8).fillColor("#0f172a").text(`GAZETTE ORDER REF: IHUB/DELHI-SAAS-DEPUTATION/2026/084`, 45, 98);
+    doc.font("Helvetica").fontSize(8).fillColor("#475569").text(`DATE OF NOTIFICATION: ${dateStr.toUpperCase()}`, 350, 98, { align: "right", width: 200 });
+
+    // Document Title
+    doc.rect(45, 114, 505, 26).fillAndStroke("#1e1b4b", "#1e1b4b");
+    doc.font("Helvetica-Bold").fontSize(11.5).fillColor("#ffffff").text("OFFICIAL NOMINATION & SPONSORED STATE DEPUTATION ORDER", 45, 121, { align: "center", width: 505 });
+
+    // Status Banner
+    doc.rect(45, 144, 505, 24).fillAndStroke("#eef2ff", "#c7d2fe");
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#3730a3").text("SELECTION STATUS: TOP 1.5% STATE PERCENTILE - OFFICIALLY DEPUTED TO NEW DELHI", 55, 151);
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("COHORT: 2026-2027", 380, 151, { align: "right", width: 160 });
+
+    // Preamble Statement
+    const preY = 176;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 1: EXECUTIVE SELECTION & DEPUTATION NOTICE", 45, preY);
+    doc.moveTo(45, preY + 12).lineTo(550, preY + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    doc.rect(45, preY + 18, 505, 46).fillAndStroke("#fcfcfd", "#cbd5e1");
+    doc.font("Helvetica").fontSize(8).fillColor("#1e293b").text(
+      `Pursuant to the joint technical evaluation by the i-Hub Gujarat Scrutiny Board and the National SaaS Evaluation Council, we are pleased to officially notify that ${name.toUpperCase()} has been SELECTED to represent the State of Gujarat as an Official Innovation Delegate at the prestigious Delhi Innovation & SaaS Acceleration Bootcamp in New Delhi.`,
+      55,
+      preY + 24,
+      { width: 485, lineGap: 1.5 }
+    );
+
+    // Candidate & Delegation Registry Grid
+    const regTop = preY + 70;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 2: DEPUTED FELLOW & PROJECT IDENTIFICATION", 45, regTop);
+    doc.moveTo(45, regTop + 12).lineTo(550, regTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const gY = regTop + 18;
+    const rH = 24;
+    doc.rect(45, gY, 505, rH * 5).fillAndStroke("#ffffff", "#94a3b8");
+
+    for (let i = 1; i < 5; i++) {
+      doc.moveTo(45, gY + i * rH).lineTo(550, gY + i * rH).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    }
+    doc.moveTo(270, gY).lineTo(270, gY + rH * 5).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
+
+    const dRows = [
+      { l1: "DEPUTED CANDIDATE NAME", v1: name.toUpperCase(), l2: "NATIONAL NOMINATION REF", v2: regId, f2: "Courier-Bold" },
+      { l1: "PARENT INSTITUTION / COLLEGE", v1: college, l2: "SPECIALIZATION TRACK", v2: track },
+      { l1: "QUALIFIED INNOVATION TITLE", v1: projectTitle, l2: "FELLOWSHIP MERIT RANK", v2: "State Merit Rank #04 (A+ Grade)" },
+      { l1: "BOOTCAMP OPERATIONAL DATES", v1: campDates, l2: "CAMP HOST FACILITY", v2: "MeitY Innovation Complex, New Delhi" },
+      { l1: "GOVERNMENT SPONSORSHIP", v1: "100% Fully Funded (State Grant)", l2: "TRANSIT STATUS", v2: "Confirmed Travel Pass Provisioned" },
+    ];
+
+    dRows.forEach((r, idx) => {
+      const cy = gY + idx * rH;
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(r.l1, 52, cy + 4);
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(r.v1, 52, cy + 13, { width: 210, ellipsis: true });
+
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(r.l2, 278, cy + 4);
+      doc.font(r.f2 || "Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(r.v2, 278, cy + 13, { width: 260, ellipsis: true });
+    });
+
+    // Barcode & QR Block
+    const barTop = gY + rH * 5 + 14;
+    doc.rect(45, barTop, 505, 84).fillAndStroke("#f8fafc", "#cbd5e1");
+    if (barcodeBuf) {
+      doc.image(barcodeBuf, 60, barTop + 12, { width: 280, height: 44 });
+      doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("National Deputation Order Barcode - Scan for Transit & Delhi Campus Check-in", 60, barTop + 62);
+    }
+    if (qrBuf) {
+      doc.image(qrBuf, 400, barTop + 6, { width: 70, height: 70 });
+      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("National Registry QR", 400, barTop + 72, { align: "center", width: 70 });
+    }
+
+    // Section 3: Financial & Logistical Sponsorship Schedule
+    const grantTop = barTop + 98;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 3: 100% SPONSORSHIP SCHEDULE & LOGISTICAL ENTITLEMENTS", 45, grantTop);
+    doc.moveTo(45, grantTop + 12).lineTo(550, grantTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const gBoxY = grantTop + 18;
+    doc.rect(45, gBoxY, 505, 76).fillAndStroke("#ffffff", "#cbd5e1");
+    const sponItems = [
+      { item: "Return Inter-State Transit (Air/Executive Rail)", ent: "Full 100% reimbursement from Mumbai/Ahmedabad to New Delhi & return", cat: "SPONSORED" },
+      { item: "Executive Residential Accommodation in Delhi", ent: "5-Night twin-sharing residential lodging at MeitY Transit House / Guest House", cat: "PROVISIONED" },
+      { item: "Enterprise SaaS Cloud & GPU Infrastructure", ent: "$5,000 USD AWS / Google Cloud Enterprise SaaS Acceleration Sandbox Credits", cat: "ALLOCATED" },
+      { item: "Closed-Door Tier-1 VC Pitch Access", ent: "1-on-1 scheduled pitch docks before Peak XV, Elevation Capital, and Accel Partners", cat: "EXCLUSIVE" },
+    ];
+
+    sponItems.forEach((sp, idx) => {
+      const sy = gBoxY + idx * 19;
+      if (idx > 0) doc.moveTo(45, sy).lineTo(550, sy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#1e1b4b").text(sp.item, 52, sy + 5);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(sp.ent, 215, sy + 5, { width: 235 });
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#059669").text(sp.cat, 460, sy + 5, { align: "right", width: 80 });
+    });
+
+    // Hint
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#475569").text("[TURN OVER TO PAGE 2 FOR CURRICULUM, VC JURY SCHEDULE & OFFICIAL SIGN-OFF]", 45, 770, { align: "right", width: 505 });
+
+    // ──────────────────────── PAGE 2 ────────────────────────
+    doc.addPage();
+    drawPageFrame(doc, 2, 2, regId, "IHUB-DELHI-DEP-06", "DELHI INNOVATION & SAAS ACCELERATION NOMINATION");
+
+    const p2Top = 80;
+
+    // Section 4: 5-Day Intensive Acceleration Curriculum
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 4: 5-DAY RESIDENTIAL ACCELERATION CURRICULUM & MILESTONES", 45, p2Top);
+    doc.moveTo(45, p2Top + 12).lineTo(550, p2Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const currY = p2Top + 18;
+    const days = [
+      { day: "Day 1 (Jan 18)", title: "Cohort Onboarding & Enterprise Multi-Tenant Architecture", desc: "Keynote by MeitY leadership; audit of database isolation, distributed caching, and tenant partitioning." },
+      { day: "Day 2 (Jan 19)", title: "FinTech Compliance, SOC2, PCI-DSS & Global API Security", desc: "Masterclasses by chief compliance officers; regulatory sandboxing and automated API threat mitigation." },
+      { day: "Day 3 (Jan 20)", title: "Cross-Border SaaS Go-To-Market & US Expansion Strategy", desc: "Enterprise outbound sales pipelines, US Delaware entity structuring, pricing models, and international billing." },
+      { day: "Day 4 (Jan 21)", title: "Institutional Mock Pitches & Term Sheet Negotiation", desc: "Intensive 1-on-1 pitch drills with managing directors from top-tier institutional early-stage funds." },
+      { day: "Day 5 (Jan 22)", title: "National Demo Day before Institutional VCs & Valedictory", desc: "Live stage presentations at the Main Auditorium before 40+ VCs, angel syndicates, and press corps." },
+    ];
+
+    doc.rect(45, currY, 505, days.length * 27).fillAndStroke("#ffffff", "#94a3b8");
+    days.forEach((d, idx) => {
+      const dy = currY + idx * 27;
+      if (idx > 0) doc.moveTo(45, dy).lineTo(550, dy).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+      if (idx % 2 === 1) doc.rect(45, dy, 505, 27).fill("#f8fafc");
+
+      doc.font("Courier-Bold").fontSize(8).fillColor("#3730a3").text(d.day, 52, dy + 5);
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text(d.title, 140, dy + 5);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(d.desc, 140, dy + 15, { width: 400 });
+    });
+
+    // Section 5: Mandatory Delegate Protocol & Transit Desk
+    const protTop = currY + days.length * 27 + 14;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 5: REPORTING PROTOCOL & NEW DELHI TRANSIT LIAISON", 45, protTop);
+    doc.moveTo(45, protTop + 12).lineTo(550, protTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const prBoxY = protTop + 18;
+    doc.rect(45, prBoxY, 505, 72).fillAndStroke("#fcfcfd", "#0f172a");
+
+    const pRules = [
+      { r: "Reporting Window:", t: "Monday, January 18, 2027 by 09:00 AM IST at MeitY Innovation Complex, Lodhi Road, New Delhi." },
+      { r: "Airport / Railway Transit:", t: "Dedicated i-Hub / MeitY helpdesks operate at IGI Airport (T3) and New Delhi Railway Station (Ajmeri Gate)." },
+      { r: "Identification Requirement:", t: "Deputed candidates must carry original Aadhaar Card and this countersigned Deputation Order." },
+      { r: "Official Contact Liaison:", t: "National Cohort Desk: delhi-saas@ihubgujarat.in | Emergency Helpline: +91 11 2436 0199" },
+    ];
+
+    pRules.forEach((pr, idx) => {
+      const pry = prBoxY + idx * 17;
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text(pr.r, 55, pry + 4);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#1e293b").text(pr.t, 185, pry + 4, { width: 355 });
+    });
+
+    // Section 6: Official Executive Signatures
+    const sTop = prBoxY + 86;
+    doc.rect(45, sTop, 505, 102).fillAndStroke("#f8fafc", "#94a3b8");
+
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("STATE DEPUTATION AUTHORITY", 55, sTop + 8);
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("DIRECTOR - INNOVATION & RESEARCH", 55, sTop + 20);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Gujarat Student Startup and Innovation Hub (i-Hub)", 55, sTop + 32);
+    doc.font("Courier-Bold").fontSize(8).fillColor("#059669").text("OFFICIALLY COUNTERSIGNED & SEALED", 55, sTop + 48);
+    doc.font("Helvetica").fontSize(7).fillColor("#475569").text(`Order Dispatched: ${dateStr}`, 55, sTop + 62);
+
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("CENTRAL MISSION LIAISON", 280, sTop + 8);
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("CHIEF EXECUTIVE - MeitY STARTUP HUB", 280, sTop + 20);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Ministry of Electronics & Information Technology, New Delhi", 280, sTop + 32);
+    doc.font("Courier-Bold").fontSize(8).fillColor("#059669").text("NATIONAL COHORT SEAT CONFIRMED", 280, sTop + 48);
+    doc.font("Helvetica").fontSize(7).fillColor("#475569").text(`Candidate: ${name.toUpperCase()} (TCET)`, 280, sTop + 62);
+
+    doc.rect(450, sTop + 14, 85, 74).strokeColor("#94a3b8").lineWidth(0.5).stroke();
+    doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#3730a3").text("MeitY STARTUP HUB\n& i-HUB GUJARAT\nNATIONAL DEPUTATION\nOFFICIAL SEAL", 450, sTop + 28, { align: "center", width: 85 });
+
+    doc.end();
+  });
+}
+
+/**
+ * ============================================================================
+ * 7. STAGE 1 TECHNICAL EVALUATION VERDICT & ALL-INDIA MERIT PROTOCOL (2 PAGES)
+ * ============================================================================
+ */
+async function generateProjectStage1MeritPdf(data = {}) {
+  const name = cleanText(data.participantName || "SUTHAR HITESH JAGDISH");
+  const regId = cleanText(data.registrationId || "IHUB-2026-6953");
+  const college = cleanText(data.college || "Thakur College of Engineering and Technology");
+  const track = cleanText(data.track || "FinTech & Next-Gen Digital Payments");
+  const projectTitle = cleanText(data.projectTitle || "Autonomous Enterprise Payment Orchestrator & Distributed Ledger Verification Engine");
+  const score = cleanText(data.evaluationScore || "94.5 / 100");
+  const rank = cleanText(data.meritRank || "State Rank #04 (Top 1.5% Percentile - Tier A+)");
+  const targetEmail = cleanText(data.stage2EmailTarget || "hiteshjagdishsuthar@gmail.com");
+  const meritDate = cleanText(data.meritReleaseDate || "December 22, 2026 at 11:00 AM IST");
+  const dateStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
+  const [barcodeBuf, qrBuf] = await Promise.all([
+    createBarcodeBuffer(`${regId}|STAGE1-PASS|SCORE-94.5`),
+    createQrCodeBuffer(`https://ihubgujarat.in/merit-audit/${regId}`),
+  ]);
+
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 30, size: "A4", autoFirstPage: true });
+    const buffers = [];
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
+
+    // ──────────────────────── PAGE 1 ────────────────────────
+    drawPageFrame(doc, 1, 2, regId, "IHUB-SCRUT-EV-07", "STAGE 1 TECHNICAL EVALUATION & MERIT VERDICT");
+
+    // Header
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT - i-HUB AHMEDABAD", 45, 48, { align: "center", width: 505 });
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#334155").text("CENTRAL TECHNICAL SCRUTINY COMMITTEE & PEER REVIEW JURY", 45, 62, { align: "center", width: 505 });
+    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("National Innovation & Startup Evaluation Mission | Prajna Puram, Navrangpura, Ahmedabad 380015", 45, 75, { align: "center", width: 505 });
+
+    doc.moveTo(45, 88).lineTo(550, 88).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 91).lineTo(550, 91).lineWidth(0.5).strokeColor("#94a3b8").stroke();
+
+    // Gazette Reference
+    doc.font("Courier-Bold").fontSize(8).fillColor("#0f172a").text(`SCRUTINY VERDICT REF: IHUB/EVAL-STAGE1/MERIT-SCRUTINY/2026/911`, 45, 98);
+    doc.font("Helvetica").fontSize(8).fillColor("#475569").text(`DATE OF VERDICT: ${dateStr.toUpperCase()}`, 350, 98, { align: "right", width: 200 });
+
+    // Document Title
+    doc.rect(45, 114, 505, 26).fillAndStroke("#0f172a", "#0f172a");
+    doc.font("Helvetica-Bold").fontSize(11.5).fillColor("#ffffff").text("OFFICIAL STAGE 1 TECHNICAL EVALUATION VERDICT & SHORTLIST CERTIFICATE", 45, 121, { align: "center", width: 505 });
+
+    // Status Banner
+    doc.rect(45, 144, 505, 24).fillAndStroke("#f0fdf4", "#bbf7d0");
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#166534").text("EVALUATION RESULT: PROJECT-BASED TECHNICAL SHORTLIST CONFIRMED (TIER A+)", 55, 151);
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("ALL-INDIA CANDIDATE", 380, 151, { align: "right", width: 160 });
+
+    // Section 1: Candidate Particulars Table
+    const sec1Top = 176;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 1: EVALUATED CANDIDATE & SUBMISSION RECORD", 45, sec1Top);
+    doc.moveTo(45, sec1Top + 12).lineTo(550, sec1Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const gY = sec1Top + 18;
+    const rH = 24;
+    doc.rect(45, gY, 505, rH * 5).fillAndStroke("#ffffff", "#94a3b8");
+
+    for (let i = 1; i < 5; i++) {
+      doc.moveTo(45, gY + i * rH).lineTo(550, gY + i * rH).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    }
+    doc.moveTo(270, gY).lineTo(270, gY + rH * 5).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
+
+    const eRows = [
+      { l1: "EVALUATED CANDIDATE NAME", v1: name.toUpperCase(), l2: "REGISTRATION REFERENCE", v2: regId, f2: "Courier-Bold" },
+      { l1: "COLLEGE / INSTITUTION", v1: college, l2: "CHALLENGE DOMAIN", v2: track },
+      { l1: "SUBMITTED PROJECT TITLE", v1: projectTitle, l2: "AUDIT VERDICT", v2: "STAGE 1 CLEARED (RECOMMENDED)" },
+      { l1: "CUMULATIVE SCORECARD", v1: `${score} (Grade: Exemplary)`, l2: "MERIT PERCENTILE", v2: rank },
+      { l1: "COMMUNICATION RECIPIENT", v1: targetEmail, l2: "NEXT STAGE DISPATCH", v2: "Direct Email Merit Notification" },
+    ];
+
+    eRows.forEach((r, idx) => {
+      const cy = gY + idx * rH;
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(r.l1, 52, cy + 4);
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(r.v1, 52, cy + 13, { width: 210, ellipsis: true });
+
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(r.l2, 278, cy + 4);
+      doc.font(r.f2 || "Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(r.v2, 278, cy + 13, { width: 260, ellipsis: true });
+    });
+
+    // Barcode Block
+    const barTop = gY + rH * 5 + 14;
+    doc.rect(45, barTop, 505, 84).fillAndStroke("#f8fafc", "#cbd5e1");
+    if (barcodeBuf) {
+      doc.image(barcodeBuf, 60, barTop + 12, { width: 280, height: 44 });
+      doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Official Technical Scrutiny Barcode - Certified by i-Hub Evaluation Directorate", 60, barTop + 62);
+    }
+    if (qrBuf) {
+      doc.image(qrBuf, 400, barTop + 6, { width: 70, height: 70 });
+      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Evaluation Audit QR", 400, barTop + 72, { align: "center", width: 70 });
+    }
+
+    // Section 2: Rigorous Peer-Review Scorecard Table
+    const scoreTop = barTop + 98;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 2: TECHNICAL ASSESSMENT RUBRIC & BENCHMARK BREAKDOWN", 45, scoreTop);
+    doc.moveTo(45, scoreTop + 12).lineTo(550, scoreTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const rubricY = scoreTop + 18;
+    const rubrics = [
+      { crit: "1. System Architecture & Fault-Tolerance", w: "30 Marks", sc: "28.5 / 30", obs: "High-throughput microservices, robust circuit-breaker patterns, clean API interfaces" },
+      { crit: "2. Algorithmic Rigor & Real-time Mitigation", w: "30 Marks", sc: "29.0 / 30", obs: "Demonstrated sub-50ms transaction anomaly detection, low false-positive rate" },
+      { crit: "3. Commercial Feasibility, Moat & SaaS Model", w: "30 Marks", sc: "27.5 / 30", obs: "Strong unit economics, scalable multi-tenant SaaS schema, clear enterprise GTM" },
+      { crit: "4. Code Cleanliness, Security & Test Coverage", w: "10 Marks", sc: "9.5 / 10", obs: "Zero critical CVE vulnerabilities, 92%+ test coverage, automated CI/CD pipeline" },
+      { crit: "CUMULATIVE OVERALL PERFORMANCE", w: "100 Marks", sc: "94.5 / 100", obs: "FINAL RECOMMENDATION: QUALIFIED FOR CONSOLIDATED ALL-INDIA MERIT LIST" },
+    ];
+
+    doc.rect(45, rubricY, 505, rubrics.length * 20).fillAndStroke("#ffffff", "#94a3b8");
+    rubrics.forEach((rb, idx) => {
+      const ry = rubricY + idx * 20;
+      if (idx > 0) doc.moveTo(45, ry).lineTo(550, ry).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+      if (idx === rubrics.length - 1) doc.rect(45, ry, 505, 20).fill("#f1f5f9");
+
+      const isTot = idx === rubrics.length - 1;
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor(isTot ? "#0f172a" : "#1e293b").text(rb.crit, 52, ry + 5.5);
+      doc.font("Courier-Bold").fontSize(7.5).fillColor(isTot ? "#059669" : "#4f46e5").text(rb.sc, 255, ry + 5.5);
+      doc.font("Helvetica").fontSize(7).fillColor("#475569").text(rb.obs, 320, ry + 5.5, { width: 220, ellipsis: true });
+    });
+
+    // Hint
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#475569").text("[TURN OVER TO PAGE 2 FOR ALL-INDIA MERIT LIST PROTOCOL & DISPATCH SCHEDULE]", 45, 770, { align: "right", width: 505 });
+
+    // ──────────────────────── PAGE 2 ────────────────────────
+    doc.addPage();
+    drawPageFrame(doc, 2, 2, regId, "IHUB-SCRUT-EV-07", "STAGE 1 TECHNICAL EVALUATION & MERIT VERDICT");
+
+    const p2Top = 80;
+
+    // Section 3: All-India Merit Rank List Directive
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 3: CONSOLIDATED ALL-INDIA MERIT RANK LIST DIRECTIVE", 45, p2Top);
+    doc.moveTo(45, p2Top + 12).lineTo(550, p2Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const merBoxY = p2Top + 18;
+    doc.rect(45, merBoxY, 505, 96).fillAndStroke("#fcfcfd", "#0f172a");
+
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("STATUTORY NATIONAL SCRUTINY & CONSOLIDATION CLAUSE", 55, merBoxY + 8);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#1e293b").text(
+      `1. NATIONAL CONSOLIDATION: Having cleared Stage 1 Technical Scrutiny with 94.5/100, the candidate's project is now entered into the National All-India Innovation Ledger alongside shortlisted contenders across all participating Indian states.\n\n` +
+      `2. DISPATCH TO ASSIGNED RECIPIENT EMAIL: The official, gazetted Consolidated All-India Merit Rank List, alongside Stage 2 Live VC Pitch appointment slots and technical docket links, will be dispatched DIRECTLY to your registered email address (${targetEmail}) on ${meritDate}.\n\n` +
+      `3. CONFIDENTIALITY & INTEGRITY: The candidate is strictly instructed to monitor their inbox and ensure uninterrupted delivery. No second submission window will be opened for unacknowledged emails.`,
+      55,
+      merBoxY + 20,
+      { width: 485, lineGap: 1.5 }
+    );
+
+    // Section 4: Stage 2 National Round Submission Prerequisites
+    const preTop = merBoxY + 110;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 4: MANDATORY STAGE 2 NATIONAL ROUND PREREQUISITES", 45, preTop);
+    doc.moveTo(45, preTop + 12).lineTo(550, preTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const prY = preTop + 18;
+    doc.rect(45, prY, 505, 84).fillAndStroke("#ffffff", "#cbd5e1");
+
+    const prereqs = [
+      { num: "01", t: "Live Production / Staging URL & API Credentials", d: "Provision a live staging endpoint with demo API keys for real-time load testing by the National Jury." },
+      { num: "02", t: "10-Slide Institutional Investor Deck", d: "Structured slide deck covering Problem, Tech Moat, Architecture Diagram, Traction, and SaaS Revenue Model." },
+      { num: "03", t: "Benchmarking & Security Vulnerability Report", d: "Attach OWASP Top 10 penetration test logs, latency profiles, and concurrent connection test data." },
+      { num: "04", t: "3-Minute Video Architecture Walkthrough", d: "Loom / YouTube unlisted video explaining distributed transaction state machine and failure recovery." },
+    ];
+
+    prereqs.forEach((pr, idx) => {
+      const pry = prY + idx * 21;
+      if (idx > 0) doc.moveTo(45, pry).lineTo(550, pry).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Courier-Bold").fontSize(8).fillColor("#4f46e5").text(pr.num, 52, pry + 4.5);
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text(pr.t, 75, pry + 4.5);
+      doc.font("Helvetica").fontSize(7).fillColor("#475569").text(pr.d, 75, pry + 12.5, { width: 465 });
+    });
+
+    // Section 5: Official Certification & Jury Signatures
+    const sTop = prY + 98;
+    doc.rect(45, sTop, 505, 96).fillAndStroke("#f8fafc", "#94a3b8");
+
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("CENTRAL SCRUTINY COMMITTEE", 55, sTop + 8);
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("CHIEF TECHNICAL EVALUATOR", 55, sTop + 20);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("National Innovation & Technical Audit Board", 55, sTop + 32);
+    doc.font("Courier-Bold").fontSize(8).fillColor("#059669").text("PROJECT AUDIT CONFIRMED (GRADE A+)", 55, sTop + 48);
+    doc.font("Helvetica").fontSize(7).fillColor("#475569").text(`Evaluated: ${dateStr}`, 55, sTop + 62);
+
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("NATIONAL JURY CHAIR", 280, sTop + 8);
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("CHAIRMAN - PEER REVIEW COUNCIL", 280, sTop + 20);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Gujarat Student Startup and Innovation Hub (i-Hub)", 280, sTop + 32);
+    doc.font("Courier-Bold").fontSize(8).fillColor("#059669").text("ALL-INDIA MERIT DISPATCH APPROVED", 280, sTop + 48);
+    doc.font("Helvetica").fontSize(7).fillColor("#475569").text(`Dispatch Target: ${targetEmail}`, 280, sTop + 62);
+
+    doc.rect(450, sTop + 14, 85, 70).strokeColor("#94a3b8").lineWidth(0.5).stroke();
+    doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#0f172a").text("CENTRAL\nSCRUTINY BOARD\nOFFICIAL AUDIT\nEMBOSSED SEAL", 450, sTop + 26, { align: "center", width: 85 });
+
+    doc.end();
+  });
+}
+
 module.exports = {
   generateRegistrationReceiptPdf,
   generateFoodPassPdf,
   generateSecurityUndertakingPdf,
   generateParentalConsentPdf,
   generateOfficialHackerPassPdf,
+  generateDelhiSaasNominationPdf,
+  generateProjectStage1MeritPdf,
   generateHackathonPass: generateOfficialHackerPassPdf, // backwards compatibility
 };
