@@ -2,7 +2,8 @@ const React = require("react");
 
 /**
  * Stage 3: Registration Confirmation & Comprehensive Dossier Email Template
- * Sent immediately after portal registration with all 4 PDF attachments:
+ * Clean, formal, institutional format without gaudy colors or emojis.
+ * Sent with 4 official PDF attachments:
  * 1. Registration Receipt
  * 2. Food & Catering Coupon Pass
  * 3. Security & Anti-Exit Undertaking
@@ -19,6 +20,11 @@ function HackathonDossierEmail({
   venue = "i-Hub Campus, Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad 380015",
   supportEmail = "hackathon@ihubgujarat.in",
 }) {
+  const cleanName = (participantName || "").replace(/&amp;/g, "&");
+  const cleanTrack = (track || "").replace(/&amp;/g, "&");
+  const cleanTeam = (teamName || "").replace(/&amp;/g, "&");
+  const cleanFood = (foodPreference || "").replace(/&amp;/g, "&");
+
   const fontSans =
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
   const fontMono =
@@ -32,17 +38,17 @@ function HackathonDossierEmail({
       null,
       React.createElement("meta", { charSet: "utf-8" }),
       React.createElement("meta", { name: "viewport", content: "width=device-width, initial-scale=1.0" }),
-      React.createElement("title", null, `Registration Confirmed [${registrationId}] — ${hackathonName}`),
+      React.createElement("title", null, `Registration Confirmed [${registrationId}] - ${hackathonName}`),
       React.createElement(
         "style",
         null,
         `
         * { box-sizing: border-box; }
-        body { margin: 0; padding: 0; background-color: #f1f5f9; font-family: ${fontSans}; -webkit-font-smoothing: antialiased; }
+        body { margin: 0; padding: 0; background-color: #f8fafc; font-family: ${fontSans}; -webkit-font-smoothing: antialiased; }
         table { border-collapse: collapse; }
         a { text-decoration: none; }
         @media only screen and (max-width: 600px) {
-          .email-card { width: 100% !important; border-radius: 8px !important; }
+          .email-card { width: 100% !important; border-radius: 6px !important; }
           .p-responsive { padding: 24px 20px !important; }
         }
       `
@@ -50,7 +56,7 @@ function HackathonDossierEmail({
     ),
     React.createElement(
       "body",
-      { style: { margin: 0, padding: 0, backgroundColor: "#f1f5f9" } },
+      { style: { margin: 0, padding: 0, backgroundColor: "#f8fafc" } },
       React.createElement(
         "table",
         {
@@ -58,7 +64,7 @@ function HackathonDossierEmail({
           cellPadding: 0,
           cellSpacing: 0,
           border: 0,
-          style: { backgroundColor: "#f1f5f9", padding: "36px 12px" },
+          style: { backgroundColor: "#f8fafc", padding: "32px 12px" },
         },
         React.createElement(
           "tbody",
@@ -81,26 +87,68 @@ function HackathonDossierEmail({
                   style: {
                     maxWidth: "600px",
                     backgroundColor: "#ffffff",
-                    borderRadius: "14px",
-                    border: "1px solid #e2e8f0",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
                     overflow: "hidden",
-                    boxShadow: "0 10px 25px rgba(15, 23, 42, 0.05)",
+                    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.05)",
                   },
                 },
                 React.createElement(
                   "tbody",
                   null,
 
-                  // Top Indigo Gradient
+                  // Subtle Institutional Header Bar
                   React.createElement(
                     "tr",
                     null,
                     React.createElement("td", {
                       style: {
-                        height: "5px",
-                        background: "linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)",
+                        height: "4px",
+                        backgroundColor: "#0f172a",
                       },
                     })
+                  ),
+
+                  // Institutional Sub-header
+                  React.createElement(
+                    "tr",
+                    null,
+                    React.createElement(
+                      "td",
+                      {
+                        style: {
+                          backgroundColor: "#f8fafc",
+                          borderBottom: "1px solid #e2e8f0",
+                          padding: "16px 36px",
+                          textAlign: "left",
+                        },
+                      },
+                      React.createElement(
+                        "div",
+                        {
+                          style: {
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            color: "#475569",
+                          },
+                        },
+                        "GOVERNMENT OF GUJARAT • i-HUB AHMEDABAD"
+                      ),
+                      React.createElement(
+                        "div",
+                        {
+                          style: {
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: "#0f172a",
+                            marginTop: "2px",
+                          },
+                        },
+                        "Student Startup & Innovation Hub • Admissions Cell"
+                      )
+                    )
                   ),
 
                   // Header
@@ -109,134 +157,63 @@ function HackathonDossierEmail({
                     null,
                     React.createElement(
                       "td",
-                      { className: "p-responsive", style: { padding: "36px 36px 18px" } },
+                      { className: "p-responsive", style: { padding: "28px 36px 16px 36px" } },
                       React.createElement(
-                        "span",
-                        {
-                          style: {
-                            display: "inline-block",
-                            backgroundColor: "#ecfdf5",
-                            border: "1px solid #a7f3d0",
-                            borderRadius: "20px",
-                            padding: "4px 12px",
-                            color: "#065f46",
-                            fontSize: "12px",
-                            fontWeight: "700",
-                            letterSpacing: "0.5px",
-                            textTransform: "uppercase",
-                            marginBottom: "12px",
-                          },
-                        },
-                        "✓ REGISTRATION DOSSIER CONFIRMED"
-                      ),
-                      React.createElement(
-                        "h1",
-                        {
-                          style: {
-                            margin: "8px 0 0",
-                            color: "#0f172a",
-                            fontSize: "26px",
-                            fontWeight: "800",
-                            lineHeight: "34px",
-                          },
-                        },
-                        `Thank You for Registering, ${participantName}!`
-                      ),
-                      React.createElement(
-                        "div",
-                        { style: { marginTop: "6px", color: "#4f46e5", fontSize: "14px", fontWeight: "600" } },
-                        `Registration Ref: ${registrationId} • ${hackathonName}`
-                      )
-                    )
-                  ),
-
-                  // Intro
-                  React.createElement(
-                    "tr",
-                    null,
-                    React.createElement(
-                      "td",
-                      { className: "p-responsive", style: { padding: "0 36px 20px", color: "#334155", fontSize: "15px", lineHeight: "24px" } },
-                      React.createElement(
-                        "p",
-                        { style: { margin: "0 0 12px" } },
-                        `Your application for the 36-hour physical hackathon at `,
-                        React.createElement("strong", { style: { color: "#0f172a" } }, "i-Hub Ahmedabad (Navrangpura)"),
-                        ` has been successfully received and validated by the admissions committee.`
-                      ),
-                      React.createElement(
-                        "p",
-                        { style: { margin: "0" } },
-                        `Attached to this email are your `,
-                        React.createElement("strong", null, "4 official registration documents"),
-                        `: your registration receipt, food & catering coupons, signed campus security protocol undertaking, and parental consent record.`
-                      )
-                    )
-                  ),
-
-                  // Summary Grid Box
-                  React.createElement(
-                    "tr",
-                    null,
-                    React.createElement(
-                      "td",
-                      { className: "p-responsive", style: { padding: "0 36px 24px" } },
-                      React.createElement(
-                        "div",
-                        {
-                          style: {
-                            backgroundColor: "#f8fafc",
-                            border: "1.5px solid #e2e8f0",
-                            borderRadius: "10px",
-                            padding: "20px",
-                          },
-                        },
+                        "table",
+                        { width: "100%", cellPadding: 0, cellSpacing: 0, border: 0 },
                         React.createElement(
-                          "table",
-                          { width: "100%", cellPadding: 0, cellSpacing: 0, border: 0 },
+                          "tbody",
+                          null,
                           React.createElement(
-                            "tbody",
+                            "tr",
                             null,
                             React.createElement(
-                              "tr",
+                              "td",
                               null,
                               React.createElement(
-                                "td",
-                                { style: { paddingBottom: "12px", width: "50%" } },
-                                React.createElement("div", { style: { color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" } }, "REGISTRATION ID"),
-                                React.createElement("div", { style: { color: "#4f46e5", fontFamily: fontMono, fontSize: "14px", fontWeight: "700", marginTop: "2px" } }, registrationId)
+                                "div",
+                                {
+                                  style: {
+                                    display: "inline-block",
+                                    fontSize: "10px",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.05em",
+                                    textTransform: "uppercase",
+                                    color: "#0f172a",
+                                    backgroundColor: "#f1f5f9",
+                                    padding: "3px 8px",
+                                    borderRadius: "4px",
+                                    marginBottom: "10px",
+                                    border: "1px solid #cbd5e1",
+                                  },
+                                },
+                                "REGISTRATION DOSSIER CONFIRMED"
                               ),
                               React.createElement(
-                                "td",
-                                { style: { paddingBottom: "12px", width: "50%" } },
-                                React.createElement("div", { style: { color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" } }, "SQUAD / TEAM"),
-                                React.createElement("div", { style: { color: "#0f172a", fontSize: "14px", fontWeight: "700", marginTop: "2px" } }, teamName)
-                              )
-                            ),
-                            React.createElement(
-                              "tr",
-                              null,
-                              React.createElement(
-                                "td",
-                                { style: { paddingBottom: "12px" } },
-                                React.createElement("div", { style: { color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" } }, "CHALLENGE TRACK"),
-                                React.createElement("div", { style: { color: "#0284c7", fontSize: "13.5px", fontWeight: "600", marginTop: "2px" } }, track)
+                                "h1",
+                                {
+                                  style: {
+                                    margin: "0 0 6px 0",
+                                    fontSize: "21px",
+                                    fontWeight: 800,
+                                    color: "#0f172a",
+                                    lineHeight: "1.3",
+                                    letterSpacing: "-0.02em",
+                                  },
+                                },
+                                `Registration Confirmed: ${cleanName}`
                               ),
                               React.createElement(
-                                "td",
-                                { style: { paddingBottom: "12px" } },
-                                React.createElement("div", { style: { color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" } }, "FOOD PREFERENCE"),
-                                React.createElement("div", { style: { color: "#059669", fontSize: "13.5px", fontWeight: "600", marginTop: "2px" } }, foodPreference)
-                              )
-                            ),
-                            React.createElement(
-                              "tr",
-                              null,
-                              React.createElement(
-                                "td",
-                                { colSpan: 2 },
-                                React.createElement("div", { style: { color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" } }, "CAMPUS VENUE"),
-                                React.createElement("div", { style: { color: "#334155", fontSize: "12.5px", marginTop: "2px" } }, venue)
+                                "div",
+                                {
+                                  style: {
+                                    fontSize: "12px",
+                                    fontFamily: fontMono,
+                                    color: "#475569",
+                                    marginTop: "2px",
+                                  },
+                                },
+                                `Reference ID: ${registrationId} • ${hackathonName}`
                               )
                             )
                           )
@@ -245,98 +222,190 @@ function HackathonDossierEmail({
                     )
                   ),
 
-                  // Strict Security Alert Box
+                  // Divider
                   React.createElement(
                     "tr",
                     null,
                     React.createElement(
                       "td",
-                      { className: "p-responsive", style: { padding: "0 36px 24px" } },
+                      { style: { padding: "0 36px" } },
+                      React.createElement("div", { style: { height: "1px", backgroundColor: "#e2e8f0" } })
+                    )
+                  ),
+
+                  // Body Statement
+                  React.createElement(
+                    "tr",
+                    null,
+                    React.createElement(
+                      "td",
+                      { className: "p-responsive", style: { padding: "20px 36px 16px 36px", color: "#334155", fontSize: "14px", lineHeight: "22px" } },
                       React.createElement(
-                        "div",
-                        {
-                          style: {
-                            backgroundColor: "#fff1f2",
-                            border: "1.5px solid #fecdd3",
-                            borderRadius: "10px",
-                            padding: "16px 20px",
-                            color: "#9f1239",
-                            fontSize: "13px",
-                            lineHeight: "20px",
-                          },
-                        },
-                        React.createElement("strong", { style: { color: "#be123c", display: "block", marginBottom: "4px" } }, "🛡️ STRICT CAMPUS SECURITY BOUNDARY CLAUSE:"),
-                        "During the 36-hour sprint, stepping outside the i-Hub premises without authorized written Security Marshal permission will result in ",
-                        React.createElement("strong", null, "IMMEDIATE PERMANENT DISQUALIFICATION"),
-                        " of the candidate and team with NO second chance."
+                        "p",
+                        { style: { margin: "0 0 10px 0" } },
+                        `Your formal registration for the `,
+                        React.createElement("strong", null, hackathonName),
+                        ` has been successfully authenticated by the Admissions and Proctorial Board at i-Hub Ahmedabad (Navrangpura).`
+                      ),
+                      React.createElement(
+                        "p",
+                        { style: { margin: 0 } },
+                        `Attached to this email are your `,
+                        React.createElement("strong", null, "4 official registration documents (PDF)"),
+                        ` generated with security barcodes and verification QR codes:`
+                      ),
+                      React.createElement(
+                        "ol",
+                        { style: { margin: "10px 0 0 0", paddingLeft: "18px", fontSize: "13px", lineHeight: "20px", color: "#0f172a" } },
+                        React.createElement("li", null, React.createElement("strong", null, "Official Registration Receipt: "), "Applicant identification and entry reference."),
+                        React.createElement("li", null, React.createElement("strong", null, "Catering & Meal Coupon Pass: "), "Designated food plan with scheduled on-campus dining slots."),
+                        React.createElement("li", null, React.createElement("strong", null, "Campus Security & Anti-Exit Undertaking: "), "Strict proctorial protocol agreement."),
+                        React.createElement("li", null, React.createElement("strong", null, "Parental / Guardian Consent Form: "), "Authorization record for on-campus overnight presence.")
                       )
                     )
                   ),
 
-                  // PDF Attachments Checklist
+                  // Metadata Table
                   React.createElement(
                     "tr",
                     null,
                     React.createElement(
                       "td",
-                      { className: "p-responsive", style: { padding: "0 36px 28px" } },
+                      { className: "p-responsive", style: { padding: "0 36px 20px 36px" } },
                       React.createElement(
-                        "div",
+                        "table",
                         {
+                          width: "100%",
+                          cellPadding: 0,
+                          cellSpacing: 0,
+                          border: 0,
                           style: {
-                            color: "#0f172a",
-                            fontSize: "13px",
-                            fontWeight: "700",
-                            letterSpacing: "0.5px",
-                            textTransform: "uppercase",
-                            marginBottom: "12px",
+                            backgroundColor: "#fcfcfd",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "6px",
+                            overflow: "hidden",
                           },
                         },
-                        "📎 4 Official PDF Documents Attached"
-                      ),
-                      React.createElement(
-                        "div",
-                        { style: { color: "#475569", fontSize: "13px", lineHeight: "22px" } },
-                        [
-                          "1. Official Registration Summary Receipt (.pdf)",
-                          "2. 36-Hour Meal & Food Coupon Pass (.pdf)",
-                          "3. Campus Security Undertaking & Zero-Tolerance Policy (.pdf)",
-                          "4. Signed Parental / Guardian Approval Form (.pdf)",
-                        ].map((docItem, idx) =>
-                          React.createElement(
-                            "div",
-                            { key: idx, style: { padding: "4px 0", color: "#334155" } },
-                            React.createElement("span", { style: { color: "#4f46e5", fontWeight: "700" } }, "📄 "),
-                            docItem
+                        React.createElement(
+                          "tbody",
+                          null,
+                          [
+                            ["REGISTRATION NUMBER", registrationId, true],
+                            ["PARTICIPANT NAME", cleanName, false],
+                            ["SQUAD / TEAM FORMAT", cleanTeam, false],
+                            ["CHALLENGE DOMAIN", cleanTrack, false],
+                            ["CATERING PREFERENCE", cleanFood, false],
+                            ["EVENT TIMINGS", "Dec 15, 09:00 AM – Dec 16, 12:30 PM", false],
+                            ["VENUE LOCATION", venue, false],
+                          ].map(([label, val, isMono], i) =>
+                            React.createElement(
+                              "tr",
+                              {
+                                key: i,
+                                style: {
+                                  borderBottom: i < 6 ? "1px solid #e2e8f0" : "none",
+                                },
+                              },
+                              React.createElement(
+                                "td",
+                                {
+                                  style: {
+                                    padding: "10px 14px",
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: "#475569",
+                                    width: "38%",
+                                    backgroundColor: "#f8fafc",
+                                    borderRight: "1px solid #e2e8f0",
+                                  },
+                                },
+                                label
+                              ),
+                              React.createElement(
+                                "td",
+                                {
+                                  style: {
+                                    padding: "10px 14px",
+                                    fontSize: "12.5px",
+                                    fontWeight: isMono ? 800 : 600,
+                                    fontFamily: isMono ? fontMono : fontSans,
+                                    color: "#0f172a",
+                                  },
+                                },
+                                val
+                              )
+                            )
                           )
                         )
                       )
                     )
                   ),
 
-                  // Next Step Note
+                  // Strict Campus Security Warning Block
                   React.createElement(
                     "tr",
                     null,
                     React.createElement(
                       "td",
-                      { className: "p-responsive", style: { padding: "0 36px 28px" } },
+                      { className: "p-responsive", style: { padding: "0 36px 24px 36px" } },
                       React.createElement(
                         "div",
                         {
                           style: {
-                            backgroundColor: "#eff6ff",
-                            border: "1px solid #bfdbfe",
-                            borderRadius: "8px",
-                            padding: "14px 18px",
-                            color: "#1e40af",
-                            fontSize: "13px",
-                            lineHeight: "20px",
+                            border: "1px solid #94a3b8",
+                            borderRadius: "6px",
+                            padding: "14px 16px",
+                            backgroundColor: "#f8fafc",
                           },
                         },
-                        React.createElement("strong", null, "What Happens Next: "),
-                        "Our review panel will evaluate submissions. If shortlisted, you will receive a secure attendance confirmation link to finalize your on-campus presence and receive your Official Hacker Boarding Pass."
+                        React.createElement(
+                          "div",
+                          {
+                            style: {
+                              fontSize: "11px",
+                              fontWeight: 800,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              color: "#0f172a",
+                              marginBottom: "4px",
+                            },
+                          },
+                          "CAMPUS BOUNDARY & SECURITY NOTICE"
+                        ),
+                        React.createElement(
+                          "p",
+                          {
+                            style: {
+                              margin: 0,
+                              fontSize: "11.5px",
+                              lineHeight: "18px",
+                              color: "#334155",
+                            },
+                          },
+                          "During the 27.5-hour event window (Dec 15, 09:00 AM – Dec 16, 12:30 PM), all participants must remain within the designated i-Hub campus perimeter. Exiting the gates without prior written approval from the Chief Security Officer and Event Warden results in ",
+                          React.createElement("strong", null, "immediate permanent disqualification"),
+                          " of the candidate and team squad without right of appeal."
+                        )
                       )
+                    )
+                  ),
+
+                  // Attachments Note
+                  React.createElement(
+                    "tr",
+                    null,
+                    React.createElement(
+                      "td",
+                      {
+                        style: {
+                          backgroundColor: "#f8fafc",
+                          borderTop: "1px solid #e2e8f0",
+                          padding: "14px 36px",
+                          fontSize: "11.5px",
+                          color: "#475569",
+                        },
+                      },
+                      "4 PDF Documents Attached: Registration-Receipt.pdf, Food-Coupon-Pass.pdf, Security-Undertaking.pdf, Parental-Guardian-Consent.pdf"
                     )
                   ),
 
@@ -348,20 +417,50 @@ function HackathonDossierEmail({
                       "td",
                       {
                         style: {
-                          backgroundColor: "#f8fafc",
-                          padding: "24px 36px",
-                          borderTop: "1px solid #e2e8f0",
+                          backgroundColor: "#ffffff",
+                          borderTop: "1px solid #cbd5e1",
+                          padding: "20px 36px",
                           textAlign: "center",
-                          color: "#64748b",
-                          fontSize: "12px",
                         },
                       },
-                      React.createElement("p", { style: { margin: "0 0 6px", color: "#334155", fontWeight: "600" } }, "i-Hub Event Cell • Prajna Puram, Navrangpura, Ahmedabad 380015"),
                       React.createElement(
                         "p",
-                        { style: { margin: "0" } },
-                        "Questions or modifications? Email us at ",
-                        React.createElement("a", { href: `mailto:${supportEmail}`, style: { color: "#4f46e5" } }, supportEmail)
+                        {
+                          style: {
+                            margin: "0 0 4px 0",
+                            fontSize: "11.5px",
+                            fontWeight: 700,
+                            color: "#0f172a",
+                          },
+                        },
+                        "i-Hub Event Cell • Gujarat Student Startup & Innovation Hub"
+                      ),
+                      React.createElement(
+                        "p",
+                        {
+                          style: {
+                            margin: "0 0 6px 0",
+                            fontSize: "11px",
+                            color: "#64748b",
+                          },
+                        },
+                        venue
+                      ),
+                      React.createElement(
+                        "p",
+                        {
+                          style: {
+                            margin: 0,
+                            fontSize: "10.5px",
+                            color: "#94a3b8",
+                          },
+                        },
+                        `Official Inquiries: `,
+                        React.createElement(
+                          "a",
+                          { href: `mailto:${supportEmail}`, style: { color: "#0f172a", textDecoration: "underline" } },
+                          supportEmail
+                        )
                       )
                     )
                   )
