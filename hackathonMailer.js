@@ -188,43 +188,84 @@ async function sendHackathonDossierEmail({
 }) {
   if (!to) throw new Error("Missing required 'to' email address");
 
-  const { html, text } = await renderEmail(HackathonDossierEmail, {
-    participantName,
-    registrationId,
-    teamName,
-    track,
-    foodPreference,
-    parentName,
-  });
+  const cleanName = (participantName || "").replace(/&amp;/g, "&");
+  const cleanTrack = (track || "").replace(/&amp;/g, "&");
+  const cleanCollege = (college || "").replace(/&amp;/g, "&");
+  const cleanDiet = (foodPreference || "").replace(/&amp;/g, "&");
+  const cleanParent = (parentName || "").replace(/&amp;/g, "&");
+
+  const text = `GOVERNMENT OF GUJARAT
+Gujarat Student Startup & Innovation Hub (i-Hub)
+KCG Campus, Opp. PRL, Navrangpura, Ahmedabad, Gujarat 380015
+
+OFFICIAL REGISTRATION CONFIRMATION DOSSIER
+Reference Number: ${registrationId}
+
+Dear ${cleanName},
+
+Your application for the i-Hub Gujarat Innovation Hackathon 2026 has been successfully verified and confirmed by the Admissions and Proctorial Board.
+
+REGISTRATION DETAILS:
+- Candidate Name: ${cleanName}
+- Registration ID: ${registrationId}
+- College / Institution: ${cleanCollege}
+- Squad & Track: ${teamName} | ${cleanTrack}
+- Food Plan: ${cleanDiet}
+- Assigned Workspace: Booth #A-14 (Cluster 2)
+- Parent / Guardian: ${cleanParent} (${parentPhone})
+- Event Timings: December 15, 09:00 AM to December 16, 12:30 PM (27.5 Hours Non-stop)
+- Venue: i-Hub Campus, Prajna Puram, Navrangpura, Ahmedabad 380015
+
+ATTACHED OFFICIAL DOCUMENTS (PDF):
+1. Official Registration Receipt & Admission Docket (2 Pages)
+2. All-Inclusive 27.5-Hour Catering & Meal Coupon Pass (2 Pages)
+3. Statutory Campus Security & Anti-Exit Undertaking (2 Pages)
+4. Parental / Guardian Overnight Participation Consent Form (2 Pages)
+
+MANDATORY REPORTING INSTRUCTIONS:
+Please report in person at the i-Hub Ahmedabad Reception on Friday, December 15, 2026 between 08:30 AM and 09:30 AM IST. Please carry your original Government Photo ID (Aadhaar / Voter ID), College Student ID, and printed copies of the attached security undertaking and parental consent form.
+
+Note: The campus boundary is strictly sealed throughout the 27.5-hour hackathon. Exiting campus premises without written permission from the Chief Proctor results in immediate permanent disqualification.
+
+For assistance, reach the admissions desk at hackathon@ihubgujarat.in or call +91 79 2630 1234.
+
+Sincerely,
+Admissions & Scrutiny Board
+Gujarat Student Startup & Innovation Hub (i-Hub)
+Education Department, Government of Gujarat`;
+
+  const html = `<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #111827; max-width: 650px; margin: 0 auto; padding: 20px 0;">
+<pre style="font-family: inherit; font-size: inherit; white-space: pre-wrap; margin: 0; line-height: 1.6; color: #111827;">${text}</pre>
+</div>`;
 
   console.log(`[hackathonMailer] Generating 4 Dossier PDFs for ${participantName} (${registrationId})...`);
 
   // Generate all 4 required PDFs
   const [receiptBuf, foodBuf, securityBuf, consentBuf] = await Promise.all([
-    generateRegistrationReceiptPdf({ participantName, registrationId, teamName, track, college }),
+    generateRegistrationReceiptPdf({ participantName, registrationId, teamName, track, college, foodPreference, parentName, parentPhone }),
     generateFoodPassPdf({ participantName, registrationId, teamName, foodPreference }),
-    generateSecurityUndertakingPdf({ participantName, registrationId, teamName, track }),
-    generateParentalConsentPdf({ participantName, registrationId, teamName, parentName, parentPhone }),
+    generateSecurityUndertakingPdf({ participantName, registrationId, teamName, track, college }),
+    generateParentalConsentPdf({ participantName, registrationId, teamName, parentName, parentPhone, college }),
   ]);
 
   const attachments = [
     {
-      filename: `${registrationId}-Registration-Receipt.pdf`,
+      filename: `i-Hub_Registration_Receipt_${registrationId}.pdf`,
       content: receiptBuf,
       contentType: "application/pdf",
     },
     {
-      filename: `${registrationId}-Food-Coupon-Pass.pdf`,
+      filename: `i-Hub_Food_Pass_${registrationId}.pdf`,
       content: foodBuf,
       contentType: "application/pdf",
     },
     {
-      filename: `${registrationId}-Campus-Security-Undertaking.pdf`,
+      filename: `i-Hub_Security_Undertaking_${registrationId}.pdf`,
       content: securityBuf,
       contentType: "application/pdf",
     },
     {
-      filename: `${registrationId}-Parental-Guardian-Consent.pdf`,
+      filename: `i-Hub_Parental_Consent_${registrationId}.pdf`,
       content: consentBuf,
       contentType: "application/pdf",
     },
@@ -232,7 +273,7 @@ async function sendHackathonDossierEmail({
 
   const mailData = {
     to,
-    subject: `📄 Dossier Confirmed: i-Hub Gujarat Innovation Hackathon 2026 [${registrationId}]`,
+    subject: `Official Registration Dossier: i-Hub Gujarat Innovation Hackathon 2026 [${registrationId}]`,
     text,
     html,
     attachments,
@@ -387,21 +428,26 @@ async function sendNationalCohortSelectionEmail({
 
   console.log(`[hackathonMailer] Generating Delhi SaaS & Stage 1 Merit PDFs for ${participantName} (${registrationId})...`);
 
+  const cleanName = (participantName || "").replace(/&amp;/g, "&");
+  const cleanTrack = (track || "").replace(/&amp;/g, "&");
+  const cleanCollege = (college || "").replace(/&amp;/g, "&");
+  const cleanProject = (projectTitle || "").replace(/&amp;/g, "&");
+
   const [delhiPdf, meritPdf] = await Promise.all([
     generateDelhiSaasNominationPdf({
-      participantName,
+      participantName: cleanName,
       registrationId,
-      college,
-      track,
-      projectTitle,
+      college: cleanCollege,
+      track: cleanTrack,
+      projectTitle: cleanProject,
       campDates,
     }),
     generateProjectStage1MeritPdf({
-      participantName,
+      participantName: cleanName,
       registrationId,
-      college,
-      track,
-      projectTitle,
+      college: cleanCollege,
+      track: cleanTrack,
+      projectTitle: cleanProject,
       evaluationScore: score,
       meritRank,
       stage2EmailTarget: to,
@@ -409,21 +455,41 @@ async function sendNationalCohortSelectionEmail({
     }),
   ]);
 
-  const { html, text } = await renderEmail(NationalCohortSelectionEmail, {
-    participantName,
-    registrationId,
-    college,
-    track,
-    projectTitle,
-    score,
-    meritRank,
-    meritDispatchDate,
-    campDates,
-  });
+  const text = `GOVERNMENT OF GUJARAT & MeitY STARTUP HUB
+Gujarat Student Startup & Innovation Hub (i-Hub)
+National Innovation & Fellowships Directorate
+Electronics Niketan, Lodhi Road, New Delhi & Prajna Puram, Ahmedabad
+
+OFFICIAL SELECTION & NATIONAL DEPUTATION NOTICE
+Reference: ${registrationId} / IHUB-DELHI-SAAS-2026-084
+
+Dear ${cleanName},
+
+We are pleased to inform you that following technical evaluation by the Central Technical Scrutiny Committee at i-Hub Ahmedabad, your project "${cleanProject}" has successfully cleared Stage 1 Technical Scrutiny with a score of ${score} (${meritRank}).
+
+By virtue of this exemplary evaluation (ranking in the top 1.5% percentile), you have been officially deputed as a State Innovation Fellow to the Delhi Innovation & SaaS Acceleration Bootcamp in New Delhi (${campDates}) with 100% government sponsorship covering your residential accommodation, inter-state travel transit, and $5,000 USD enterprise cloud credits.
+
+ALL-INDIA MERIT LIST DIRECTIVE:
+Your project is now entered into the National Innovation Ledger. The consolidated All-India National Merit Rank List and Stage 2 Live VC Pitch Schedule will be dispatched directly to this registered email address on ${meritDispatchDate}.
+
+ATTACHED OFFICIAL DOCUMENTS (PDF):
+1. Official Nomination & State Deputation Order - Delhi Innovation & SaaS Camp (2 Pages)
+2. Stage 1 Technical Evaluation Verdict & All-India Merit Directive (2 Pages)
+
+Please review the attached PDF documents for the complete curriculum, logistical entitlements, and Stage 2 submission guidelines.
+
+Sincerely,
+Director of Innovation & Research
+Gujarat Student Startup & Innovation Hub (i-Hub)
+In Joint Mission with MeitY Startup Hub, New Delhi`;
+
+  const html = `<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #111827; max-width: 650px; margin: 0 auto; padding: 20px 0;">
+<pre style="font-family: inherit; font-size: inherit; white-space: pre-wrap; margin: 0; line-height: 1.6; color: #111827;">${text}</pre>
+</div>`;
 
   const mailData = {
     to,
-    subject: `National Deputation Order & Stage 1 Merit Verdict [${registrationId}] - i-Hub Gujarat`,
+    subject: `Official Deputation Order & Stage 1 Merit Verdict [${registrationId}] - i-Hub Gujarat`,
     text,
     html,
     attachments: [
