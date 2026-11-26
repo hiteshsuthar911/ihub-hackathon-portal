@@ -14,7 +14,7 @@ async function createBarcodeBuffer(text) {
       height: 12,
       includetext: true,
       textxalign: "center",
-      textsize: 9,
+      textsize: 8,
     });
   } catch (err) {
     console.error("Barcode generation error:", err);
@@ -39,694 +39,1062 @@ async function createQrCodeBuffer(text) {
 }
 
 /**
- * 1. Official Registration Receipt PDF
- * Professional institutional document format with official header, metadata table, barcode, and verification QR.
+ * Sanitize and clean HTML entities / corrupted byte artifacts
+ */
+function cleanText(str) {
+  if (!str || typeof str !== "string") return "";
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x2F;/g, "/")
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, "") // strip emoji / non-latin bytes
+    .trim();
+}
+
+/**
+ * Common double-line document frame and institutional running header/footer
+ */
+function drawPageFrame(doc, pageNum, totalPages, regId, docCode, title) {
+  // Outer formal double border
+  doc.lineWidth(1).strokeColor("#0f172a").rect(30, 30, 535, 782).stroke();
+  doc.lineWidth(0.5).strokeColor("#94a3b8").rect(34, 34, 527, 774).stroke();
+
+  // Running header (Page 2 onwards)
+  if (pageNum > 1) {
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT - i-HUB AHMEDABAD", 45, 42);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text(`${title} | REF: ${regId}`, 45, 52);
+    doc.font("Courier-Bold").fontSize(7.5).fillColor("#0f172a").text(`DOC CODE: ${docCode}`, 380, 42, { align: "right", width: 170 });
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text(`Page ${pageNum} of ${totalPages}`, 380, 52, { align: "right", width: 170 });
+    doc.moveTo(42, 64).lineTo(553, 64).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
+  }
+
+  // Running footer on every page
+  const footY = 794;
+  doc.moveTo(42, footY - 6).lineTo(553, footY - 6).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
+  doc.font("Helvetica").fontSize(7).fillColor("#64748b").text(
+    `Gujarat Student Startup & Innovation Hub (i-Hub) | Prajna Puram, Navrangpura, Ahmedabad 380015 | Helpline: +91 79 2630 1234`,
+    45,
+    footY
+  );
+  doc.font("Helvetica-Bold").fontSize(7).fillColor("#0f172a").text(`Page ${pageNum} of ${totalPages}`, 450, footY, { align: "right", width: 105 });
+}
+
+/**
+ * ============================================================================
+ * 1. OFFICIAL REGISTRATION RECEIPT & ADMISSION DOCKET (2 PAGES)
+ * ============================================================================
  */
 async function generateRegistrationReceiptPdf(data = {}) {
-  const name = (data.participantName || "Alex Rivera").replace(/&amp;/g, "&");
-  const regId = data.registrationId || "IHUB-2026-9842";
-  const team = (data.teamName || "Solo").replace(/&amp;/g, "&");
-  const track = (data.track || "AI, Generative Agents & Automation").replace(/&amp;/g, "&");
-  const college = (data.college || "Gujarat University").replace(/&amp;/g, "&");
+  const name = cleanText(data.participantName || "Alex Rivera");
+  const regId = cleanText(data.registrationId || "IHUB-2026-9842");
+  const team = cleanText(data.teamName || "Solo Innovator");
+  const track = cleanText(data.track || "FinTech & Next-Gen Digital Payments");
+  const college = cleanText(data.college || "Thakur College of Engineering and Technology");
+  const diet = cleanText(data.foodPreference || "Pure Vegetarian");
+  const parentName = cleanText(data.parentName || (data.parentalApproval && data.parentalApproval.parentName) || "Jagdish Suthar");
+  const parentPhone = cleanText(data.parentPhone || (data.parentalApproval && data.parentalApproval.parentPhone) || "9768440000");
   const dateStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
   const [barcodeBuf, qrBuf] = await Promise.all([
     createBarcodeBuffer(regId),
-    createQrCodeBuffer(`https://ihubgujarat.in/verify/${regId}?type=receipt`),
+    createQrCodeBuffer(`https://ihubgujarat.in/verify/${regId}?doc=receipt`),
   ]);
 
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const doc = new PDFDocument({ margin: 30, size: "A4", autoFirstPage: true });
     const buffers = [];
     doc.on("data", buffers.push.bind(buffers));
     doc.on("end", () => resolve(Buffer.concat(buffers)));
     doc.on("error", reject);
 
-    // Document Frame (Clean double border)
-    doc.lineWidth(1).strokeColor("#0f172a").rect(30, 30, 535, 782).stroke();
-    doc.lineWidth(0.5).strokeColor("#94a3b8").rect(34, 34, 527, 774).stroke();
+    // ──────────────────────── PAGE 1 ────────────────────────
+    drawPageFrame(doc, 1, 2, regId, "IHUB-ADM-RCP-01", "REGISTRATION RECEIPT & ADMISSION DOCKET");
 
-    // Institutional Header
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT", 40, 50, { align: "center", width: 515 });
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#475569").text("GUJARAT STUDENT STARTUP AND INNOVATION HUB (i-HUB)", 40, 64, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(8.5).fillColor("#64748b").text("KCG Campus, Opp. PRL, Navrangpura, Ahmedabad, Gujarat 380015", 40, 77, { align: "center", width: 515 });
+    // Institutional Emblem Header
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT", 45, 48, { align: "center", width: 505 });
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#334155").text("EDUCATION DEPARTMENT - GUJARAT STUDENT STARTUP AND INNOVATION HUB", 45, 62, { align: "center", width: 505 });
+    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("KCG Campus, Opp. PRL, Prajna Puram, Navrangpura, Ahmedabad, Gujarat 380015", 45, 75, { align: "center", width: 505 });
 
-    doc.moveTo(40, 92).lineTo(555, 92).lineWidth(1).strokeColor("#0f172a").stroke();
-    doc.moveTo(40, 95).lineTo(555, 95).lineWidth(0.5).strokeColor("#94a3b8").stroke();
+    doc.moveTo(45, 88).lineTo(550, 88).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 91).lineTo(550, 91).lineWidth(0.5).strokeColor("#94a3b8").stroke();
 
-    // Document Title & Reference
-    doc.font("Helvetica-Bold").fontSize(14).fillColor("#0f172a").text("OFFICIAL HACKATHON REGISTRATION RECEIPT", 40, 110, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(9).fillColor("#475569").text(`EVENT: i-HUB GUJARAT INNOVATION HACKATHON 2026`, 40, 128, { align: "center", width: 515 });
+    // Document Meta Strip
+    doc.font("Courier-Bold").fontSize(8).fillColor("#0f172a").text(`DISPATCH REF: IHUB/HACK-2026/REG/${regId}`, 45, 98);
+    doc.font("Helvetica").fontSize(8).fillColor("#475569").text(`DATE OF ISSUE: ${dateStr.toUpperCase()}`, 380, 98, { align: "right", width: 170 });
 
-    // Status Badge Block
-    doc.rect(40, 148, 515, 24).fillAndStroke("#f8fafc", "#cbd5e1");
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("STATUS: REGISTRATION OFFICIALLY CONFIRMED & VERIFIED", 50, 155);
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text(`DATE ISSUED: ${dateStr.toUpperCase()}`, 380, 155, { align: "right", width: 165 });
+    // Document Title
+    doc.rect(45, 114, 505, 26).fillAndStroke("#0f172a", "#0f172a");
+    doc.font("Helvetica-Bold").fontSize(12).fillColor("#ffffff").text("OFFICIAL HACKATHON REGISTRATION RECEIPT & ADMISSION DOCKET", 45, 121, { align: "center", width: 505 });
 
-    // Applicant & Squad Details Table
-    const tableTop = 185;
-    const rowHeight = 26;
-    doc.rect(40, tableTop, 515, rowHeight * 5).fillAndStroke("#ffffff", "#94a3b8");
+    // Status & Event Sub-strip
+    doc.rect(45, 144, 505, 22).fillAndStroke("#f1f5f9", "#cbd5e1");
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#059669").text("ADMISSION STATUS: PROVISIONALLY VERIFIED & SEAT ALLOCATED", 55, 150);
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("EVENT: i-HUB GUJARAT INNOVATION HACKATHON 2026", 280, 150, { align: "right", width: 260 });
 
-    // Grid Horizontal Dividers
-    for (let i = 1; i < 5; i++) {
-      doc.moveTo(40, tableTop + i * rowHeight).lineTo(555, tableTop + i * rowHeight).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    // Section 1: Candidate & Registration Credentials Table
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 1: CANDIDATE ACADEMIC & ADMISSION CREDENTIALS", 45, 178);
+    doc.moveTo(45, 190).lineTo(550, 190).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const gridY = 196;
+    const rH = 24;
+    doc.rect(45, gridY, 505, rH * 6).fillAndStroke("#ffffff", "#94a3b8");
+
+    for (let i = 1; i < 6; i++) {
+      doc.moveTo(45, gridY + i * rH).lineTo(550, gridY + i * rH).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
     }
-    // Vertical divider
-    doc.moveTo(280, tableTop).lineTo(280, tableTop + rowHeight * 5).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
+    doc.moveTo(270, gridY).lineTo(270, gridY + rH * 6).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
 
-    // Row 1
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("APPLICANT FULL NAME", 50, tableTop + 5);
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text(name, 50, tableTop + 14);
+    const rowData = [
+      { l1: "APPLICANT FULL NAME", v1: name.toUpperCase(), l2: "REGISTRATION REFERENCE ID", v2: regId, f2: "Courier-Bold" },
+      { l1: "COLLEGE / INSTITUTION", v1: college, l2: "PARTICIPATION FORMAT", v2: team },
+      { l1: "CHALLENGE DOMAIN / TRACK", v1: track, l2: "ASSIGNED HARDWARE BOOTH", v2: "Booth #A-14 (Cluster 2)" },
+      { l1: "REGISTERED FOOD PLAN", v1: diet, l2: "ADMISSION VERIFICATION", v2: "2FA OTP Dual Authenticated" },
+      { l1: "PARENT / GUARDIAN NAME", v1: parentName, l2: "PARENT EMERGENCY CONTACT", v2: parentPhone },
+      { l1: "REPORTING VENUE", v1: "i-Hub Campus Main Auditorium", l2: "GRANT STATUS", v2: "Govt Sponsored (₹0.00 Tuition)" },
+    ];
 
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("REGISTRATION REFERENCE ID", 290, tableTop + 5);
-    doc.font("Courier-Bold").fontSize(11).fillColor("#0f172a").text(regId, 290, tableTop + 14);
+    rowData.forEach((row, idx) => {
+      const cy = gridY + idx * rH;
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(row.l1, 52, cy + 4);
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(row.v1, 52, cy + 13, { width: 210, ellipsis: true });
 
-    // Row 2
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("INSTITUTION / COLLEGE / ORG", 50, tableTop + rowHeight + 5);
-    doc.font("Helvetica").fontSize(9.5).fillColor("#0f172a").text(college, 50, tableTop + rowHeight + 14, { width: 220, ellipsis: true });
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(row.l2, 278, cy + 4);
+      doc.font(row.f2 || "Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(row.v2, 278, cy + 13, { width: 260, ellipsis: true });
+    });
 
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("SQUAD / TEAM NAME", 290, tableTop + rowHeight + 5);
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text(team, 290, tableTop + rowHeight + 14);
+    // Barcode & QR Block
+    const barTop = gridY + rH * 6 + 14;
+    doc.rect(45, barTop, 505, 96).fillAndStroke("#f8fafc", "#cbd5e1");
 
-    // Row 3
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("CHALLENGE TRACK", 50, tableTop + rowHeight * 2 + 5);
-    doc.font("Helvetica").fontSize(9.5).fillColor("#0f172a").text(track, 50, tableTop + rowHeight * 2 + 14, { width: 220, ellipsis: true });
+    if (barcodeBuf) {
+      doc.image(barcodeBuf, 60, barTop + 14, { width: 260, height: 48 });
+      doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Official Admissions Barcode (Scan at Registration Gate A)", 60, barTop + 70);
+    }
 
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("PARTICIPATION MODE", 290, tableTop + rowHeight * 2 + 5);
-    doc.font("Helvetica").fontSize(9.5).fillColor("#0f172a").text(team === "Solo" ? "Individual (Solo Innovator)" : "Team Squad Lead", 290, tableTop + rowHeight * 2 + 14);
+    if (qrBuf) {
+      doc.image(qrBuf, 395, barTop + 8, { width: 80, height: 80 });
+      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Scan to Validate", 395, barTop + 84, { align: "center", width: 80 });
+    }
 
-    // Row 4
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("EVENT DATES & TIMINGS", 50, tableTop + rowHeight * 3 + 5);
-    doc.font("Helvetica").fontSize(9).fillColor("#0f172a").text("December 15, 09:00 AM to December 16, 12:30 PM", 50, tableTop + rowHeight * 3 + 14);
+    // Section 2: Financial Exemption & Sponsorship Schedule
+    const grantY = barTop + 110;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 2: SPONSORSHIP, STIPEND & INFRASTRUCTURE ENTITLEMENTS", 45, grantY);
+    doc.moveTo(45, grantY + 12).lineTo(550, grantY + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("VENUE SECTOR", 290, tableTop + rowHeight * 3 + 5);
-    doc.font("Helvetica").fontSize(9).fillColor("#0f172a").text("Prajna Puram, Navrangpura, Ahmedabad", 290, tableTop + rowHeight * 3 + 14);
+    const grantBoxY = grantY + 18;
+    doc.rect(45, grantBoxY, 505, 76).fillAndStroke("#ffffff", "#e2e8f0");
+    const grants = [
+      { item: "Tuition & Delegate Entry Fee", val: "100% Waived (Full State Government Scholarship)", status: "COMPLIMENTARY" },
+      { item: "High-Speed Gigabit LAN & Cloud Cluster", val: "500 Mbps Dedicated Dual-Fiber + $500 Cloud Sandbox Credits", status: "PROVISIONED" },
+      { item: "Full 27.5-Hour Catering & Hospitality", val: "7 Full Meals + Midnight Refreshment Stations (Dining Pass Attached)", status: "INCLUDED" },
+      { item: "Makerspace & IoT Hardware Access", val: "i-Hub FabLab 3D Printers, Oscilloscopes & Microcontroller Kits", status: "AVAILABLE" },
+    ];
 
-    // Row 5
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("REPORTING / GATE CHECK-IN", 50, tableTop + rowHeight * 4 + 5);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("Monday, December 15, 2026 at 09:00 AM IST", 50, tableTop + rowHeight * 4 + 14);
+    grants.forEach((g, idx) => {
+      const gy = grantBoxY + idx * 19;
+      if (idx > 0) doc.moveTo(45, gy).lineTo(550, gy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#334155").text(g.item, 55, gy + 5);
+      doc.font("Helvetica").fontSize(8).fillColor("#64748b").text(g.val, 200, gy + 5, { width: 230 });
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#059669").text(g.status, 440, gy + 5, { align: "right", width: 95 });
+    });
 
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#64748b").text("SECURITY BADGE PRINTING", 290, tableTop + rowHeight * 4 + 5);
-    doc.font("Helvetica").fontSize(9).fillColor("#0f172a").text("Terminal Gate 1 & 2 (Main Porch)", 290, tableTop + rowHeight * 4 + 14);
+    // Section 3: Essential Reporting Summary Notice
+    const notY = grantBoxY + 90;
+    doc.rect(45, notY, 505, 68).fillAndStroke("#fcfcfd", "#0f172a");
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("MANDATORY CANDIDATE REPORTING NOTICE", 55, notY + 8);
+    doc.font("Helvetica").fontSize(8).fillColor("#1e293b").text(
+      "All registered innovators must present themselves in person at the i-Hub Ahmedabad Reception on Friday, December 15, 2026 between 08:30 AM and 09:30 AM IST. Turn over to Page 2 for the exhaustive mandatory verification checklist, round progression milestones, and control room directory.",
+      55,
+      notY + 22,
+      { width: 485, lineGap: 2.5 }
+    );
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#475569").text("[CONTINUED ON PAGE 2 OF 2 - PLEASE TURN OVER]", 45, notY + 54, { align: "right", width: 495 });
 
-    // Registration Checklist Section
-    const checkTop = 330;
-    doc.rect(40, checkTop, 515, 120).fillAndStroke("#fcfcfd", "#cbd5e1");
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("REGISTRATION DOSSIER AUDIT & VALIDATION CHECKLIST", 50, checkTop + 10);
+    // ──────────────────────── PAGE 2 ────────────────────────
+    doc.addPage();
+    drawPageFrame(doc, 2, 2, regId, "IHUB-ADM-RCP-01", "REGISTRATION RECEIPT & ADMISSION DOCKET");
+
+    const p2Top = 80;
+
+    // Section 4: Mandatory Document & Entry Checklist
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 3: MANDATORY DESK VERIFICATION CHECKLIST", 45, p2Top);
+    doc.moveTo(45, p2Top + 12).lineTo(550, p2Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const chkY = p2Top + 18;
+    doc.rect(45, chkY, 505, 84).fillAndStroke("#ffffff", "#cbd5e1");
 
     const checklist = [
-      ["[ VERIFIED ]", "Applicant & Squad Profile Authenticated via 2-Factor OTP verification."],
-      ["[ VERIFIED ]", "Meal & Catering Pass Provisioned with specific dietary counters."],
-      ["[ ACCEPTED ]", "Campus Safety, Disqualification & Zero-Tolerance Anti-Exit Undertaking on record."],
-      ["[ RECORDED ]", "Parental / Guardian Consent logged for 27.5-hour on-campus presence."],
-      ["[ APPROVED ]", "Hardware & Personal Computing Clearance authorized for security entry."],
+      { box: "[  ]", title: "Original Government Photo Identity", desc: "Physical Aadhaar Card, Voter ID, Driver License or Indian Passport for biometric cross-match." },
+      { box: "[  ]", title: "Valid College / Institutional Identity Card", desc: "Original college student card or Dean-signed bonafide enrollment letter." },
+      { box: "[  ]", title: "Signed Security & Anti-Exit Undertaking", desc: "Printed & physically counter-signed copy of Attachment 3 (Anti-Exit Protocol)." },
+      { box: "[  ]", title: "Parental Overnight Consent Document", desc: "Attachment 4 signed by parent/guardian with verifiable emergency mobile number." },
+      { box: "[  ]", title: "Hardware Inward Pass Declaration", desc: "Serial numbers of laptop, power adaptors, and external microcontrollers logged for inward security tag." },
     ];
 
-    let checkY = checkTop + 28;
-    checklist.forEach(([tag, desc]) => {
-      doc.font("Courier-Bold").fontSize(8.5).fillColor("#0f172a").text(tag, 50, checkY);
-      doc.font("Helvetica").fontSize(8.5).fillColor("#334155").text(desc, 135, checkY);
-      checkY += 17;
+    checklist.forEach((item, idx) => {
+      const iy = chkY + idx * 16.5;
+      if (idx > 0) doc.moveTo(45, iy).lineTo(550, iy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Courier-Bold").fontSize(8.5).fillColor("#0f172a").text(item.box, 52, iy + 3.5);
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text(item.title + ":", 75, iy + 3.5);
+      doc.font("Helvetica").fontSize(8).fillColor("#475569").text(item.desc, 235, iy + 3.5, { width: 305 });
     });
 
-    // Verification Section with Real Barcode & QR Code
-    const authTop = 465;
-    doc.rect(40, authTop, 515, 120).fillAndStroke("#ffffff", "#94a3b8");
+    // Section 5: Hackathon 4-Stage Round Timeline & Milestone Framework
+    const timeTop = chkY + 100;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 4: 27.5-HOUR ROUND TIMELINE & EVALUATION MILESTONES", 45, timeTop);
+    doc.moveTo(45, timeTop + 12).lineTo(550, timeTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    // Left: QR Code
-    if (qrBuf) {
-      doc.image(qrBuf, 52, authTop + 10, { width: 100, height: 100 });
-      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Scan to Authenticate", 52, authTop + 112, { width: 100, align: "center" });
-    }
-
-    // Right: Barcode + Details
-    if (barcodeBuf) {
-      doc.image(barcodeBuf, 175, authTop + 18, { width: 250, height: 42 });
-    }
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text(`SECURITY SCANNER IDENTIFIER: ${regId}`, 175, authTop + 68);
-    doc.font("Helvetica").fontSize(8).fillColor("#475569").text("This barcode is encoded with candidate identity metadata and verified by i-Hub Security Cell.", 175, authTop + 80, { width: 360 });
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Keep this document accessible on your phone or in printed format for fast-track badge collection.", 175, authTop + 94, { width: 360 });
-
-    // Official Rules & Entry Protocol
-    const ruleTop = 600;
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("MANDATORY ENTRY & REPORTING DIRECTIVES", 40, ruleTop);
-    doc.moveTo(40, ruleTop + 12).lineTo(555, ruleTop + 12).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
-
-    const rules = [
-      "1. Physical Government Photo ID (Aadhaar, Voter ID, Passport) and College ID Card are mandatory at check-in.",
-      "2. Gate clearance closes promptly at 10:30 AM on December 15. Late arrivals will not be accommodated.",
-      "3. Laptops, peripherals, and developer boards must be logged at the property counter before entering the hacking bay.",
-      "4. The campus perimeter is sealed throughout the event. Stepping outside results in immediate disqualification.",
+    const timeY = timeTop + 18;
+    const timeRows = [
+      { time: "Dec 15 | 09:00 AM - 11:00 AM", stage: "Round 1", task: "Physical Check-in, Badge Printing, Kit Distribution & Inaugural Keynote" },
+      { time: "Dec 15 | 11:00 AM SHARP", stage: "Commencement", task: "27.5-HOUR CONTINUOUS HACKING SPRINT OFFICIALLY BEGINS" },
+      { time: "Dec 15 | 04:00 PM - 07:00 PM", stage: "Round 2", task: "Milestone 1: Architectural Validation, Problem Mapping & Tech Stack Review" },
+      { time: "Dec 15 | 08:30 PM - 10:00 PM", stage: "Checkpoint", task: "Dinner Buffet & Progress Checkpoint Sign-off by Domain Mentors" },
+      { time: "Dec 16 | 01:30 AM - 04:30 AM", stage: "Round 3", task: "Midnight Screening & Jury Pitch: Bottom 25% Elimination Cut Enforced" },
+      { time: "Dec 16 | 09:30 AM SHARP", stage: "Code Freeze", task: "Devpost Repository Commit Lock: Late submissions immediately rejected" },
+      { time: "Dec 16 | 10:30 AM - 12:30 PM", stage: "Round 4", task: "Grand Finale Live Stage Demos before VC Jury, Valedictory & Awards" },
     ];
 
-    let rY = ruleTop + 18;
-    rules.forEach((r) => {
-      doc.font("Helvetica").fontSize(8.5).fillColor("#334155").text(r, 40, rY, { width: 515, lineGap: 2 });
-      rY += 15;
+    doc.rect(45, timeY, 505, timeRows.length * 20.5).fillAndStroke("#ffffff", "#94a3b8");
+    timeRows.forEach((r, idx) => {
+      const ty = timeY + idx * 20.5;
+      if (idx > 0) doc.moveTo(45, ty).lineTo(550, ty).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+      if (idx % 2 === 1) doc.rect(45, ty, 505, 20.5).fill("#f8fafc");
+
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#0f172a").text(r.time, 52, ty + 5.5);
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#4f46e5").text(r.stage, 220, ty + 5.5);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#334155").text(r.task, 290, ty + 5.5, { width: 250 });
     });
 
-    // Signature & Seal Box
-    const signTop = 680;
-    doc.rect(40, signTop, 515, 85).fillAndStroke("#f8fafc", "#cbd5e1");
+    // Section 6: Emergency & Administrative Contacts
+    const dirTop = timeY + timeRows.length * 20.5 + 16;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 5: CONTROL ROOM & EMERGENCY RESPONSE DIRECTORY", 45, dirTop);
+    doc.moveTo(45, dirTop + 12).lineTo(550, dirTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("ISSUING AUTHORITY", 55, signTop + 10);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("ADMISSIONS & SCRUTINY COMMITTEE", 55, signTop + 22);
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Gujarat Student Startup & Innovation Hub (i-Hub)", 55, signTop + 34);
-    doc.font("Helvetica").fontSize(7.5).fillColor("#059669").text("DIGITALLY SIGNED & OFFICIALLY DISPATCHED", 55, signTop + 54);
+    const dirY = dirTop + 18;
+    doc.rect(45, dirY, 505, 52).fillAndStroke("#ffffff", "#cbd5e1");
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("CANDIDATE ACKNOWLEDGMENT", 330, signTop + 10);
-    doc.font("Helvetica").fontSize(8).fillColor("#334155").text("Signature on file via two-factor electronic authentication.", 330, signTop + 22, { width: 210 });
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(`NAME: ${name.toUpperCase()}`, 330, signTop + 42);
-    doc.font("Courier-Bold").fontSize(8.5).fillColor("#0f172a").text(`ID: ${regId}`, 330, signTop + 54);
+    const contacts = [
+      { unit: "Central Helpdesk", loc: "Ground Floor Atrium", phone: "+91 79 2630 1234", email: "hackathon@ihubgujarat.in" },
+      { unit: "Medical Cell & Ambulance", loc: "Room 104 (Health Post)", phone: "+91 98250 11223", email: "medical@ihubgujarat.in" },
+      { unit: "Proctorial Security", loc: "Main Security Gate A", phone: "+91 97123 44556", email: "security@ihubgujarat.in" },
+    ];
 
-    // Bottom Watermark
-    doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text(`Document Reference: ${regId}-RECEIPT-OFFICIAL • Issued under Government of Gujarat i-Hub Hackathon Mandate`, 40, 792, { align: "center", width: 515 });
+    contacts.forEach((c, idx) => {
+      const cy = dirY + idx * 17;
+      if (idx > 0) doc.moveTo(45, cy).lineTo(550, cy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text(c.unit, 52, cy + 4);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(c.loc, 175, cy + 4);
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#0f172a").text(c.phone, 305, cy + 4);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#4f46e5").text(c.email, 420, cy + 4);
+    });
+
+    // Section 7: Signatures & Certification Block
+    const signTop = dirY + 70;
+    doc.rect(45, signTop, 505, 96).fillAndStroke("#f8fafc", "#94a3b8");
+
+    // Candidate declaration side
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("CANDIDATE SOLEMN UNDERTAKING", 55, signTop + 8);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#334155").text(
+      "I confirm that all particulars provided herein are authentic. I agree to abide by all i-Hub regulations and campus disciplinary rules.",
+      55,
+      signTop + 20,
+      { width: 220, lineGap: 1.5 }
+    );
+    doc.moveTo(55, signTop + 72).lineTo(235, signTop + 72).lineWidth(0.5).strokeColor("#475569").stroke();
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text("Signature of Candidate / Innovator", 55, signTop + 76);
+
+    // Official Authority side
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("ADMISSIONS & SCRUTINY COMMITTEE", 300, signTop + 8);
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("GUJARAT STUDENT STARTUP & INNOVATION HUB", 300, signTop + 20);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Prajna Puram, Navrangpura, Ahmedabad 380015", 300, signTop + 32);
+    doc.font("Courier-Bold").fontSize(8).fillColor("#059669").text("DIGITALLY VALIDATED & OFFICIALLY ISSUED", 300, signTop + 48);
+
+    doc.rect(450, signTop + 14, 85, 68).strokeColor("#94a3b8").lineWidth(0.5).stroke();
+    doc.font("Helvetica").fontSize(6.5).fillColor("#94a3b8").text("OFFICIAL STAMP\n& SEAL\nAT ENTRY", 450, signTop + 32, { align: "center", width: 85 });
 
     doc.end();
   });
 }
 
 /**
- * 2. Official Food & Catering Meal Pass PDF
- * Clean, tabular coupon pass with real barcode and QR code, showing scheduled meal times.
+ * ============================================================================
+ * 2. COMPREHENSIVE FOOD & HOSPITALITY CATERING PASS (2 PAGES)
+ * ============================================================================
  */
 async function generateFoodPassPdf(data = {}) {
-  const name = (data.participantName || "Alex Rivera").replace(/&amp;/g, "&");
-  const regId = data.registrationId || "IHUB-2026-9842";
-  const diet = (data.foodPreference || "Pure Vegetarian").replace(/&amp;/g, "&");
+  const name = cleanText(data.participantName || "Alex Rivera");
+  const regId = cleanText(data.registrationId || "IHUB-2026-9842");
+  const diet = cleanText(data.foodPreference || "Pure Vegetarian");
+  const team = cleanText(data.teamName || "Solo Innovator");
+  const passId = `FP-${regId.replace("IHUB-", "")}`;
 
   const [barcodeBuf, qrBuf] = await Promise.all([
-    createBarcodeBuffer(`${regId}-FOOD`),
-    createQrCodeBuffer(`https://ihubgujarat.in/verify/${regId}?type=food`),
+    createBarcodeBuffer(`${regId}|FOOD|${diet.substring(0, 3).toUpperCase()}`),
+    createQrCodeBuffer(`https://ihubgujarat.in/verify/${regId}?doc=foodpass`),
   ]);
 
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const doc = new PDFDocument({ margin: 30, size: "A4", autoFirstPage: true });
     const buffers = [];
     doc.on("data", buffers.push.bind(buffers));
     doc.on("end", () => resolve(Buffer.concat(buffers)));
     doc.on("error", reject);
 
-    // Frame
-    doc.lineWidth(1).strokeColor("#0f172a").rect(30, 30, 535, 782).stroke();
-    doc.lineWidth(0.5).strokeColor("#94a3b8").rect(34, 34, 527, 774).stroke();
+    // ──────────────────────── PAGE 1 ────────────────────────
+    drawPageFrame(doc, 1, 2, regId, "IHUB-HOSP-FP-02", "OFFICIAL FOOD & CATERING COUPON PASS");
 
     // Header
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT // i-HUB AHMEDABAD", 40, 50, { align: "center", width: 515 });
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#475569").text("HOSPITALITY, CATERING & LOGISTICS CELL", 40, 64, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(8.5).fillColor("#64748b").text("Prajna Puram, KCG Campus, Navrangpura, Ahmedabad 380015", 40, 77, { align: "center", width: 515 });
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT - i-HUB AHMEDABAD", 45, 48, { align: "center", width: 505 });
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#334155").text("HOSPITALITY, CATERING & DELEGATE WELFARE CELL", 45, 62, { align: "center", width: 505 });
+    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Annual Innovation Hackathon 2026 | Prajna Puram, Navrangpura, Ahmedabad 380015", 45, 75, { align: "center", width: 505 });
 
-    doc.moveTo(40, 92).lineTo(555, 92).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 88).lineTo(550, 88).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 91).lineTo(550, 91).lineWidth(0.5).strokeColor("#94a3b8").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(14).fillColor("#0f172a").text("OFFICIAL CATERING & MEAL COUPON PASS", 40, 108, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(9).fillColor("#475569").text("EVENT DATES: DECEMBER 15, 09:00 AM – DECEMBER 16, 12:30 PM", 40, 126, { align: "center", width: 515 });
+    // Pass Title
+    doc.rect(45, 102, 505, 26).fillAndStroke("#065f46", "#065f46");
+    doc.font("Helvetica-Bold").fontSize(12).fillColor("#ffffff").text("ALL-INCLUSIVE 27.5-HOUR MEAL & HOSPITALITY PASS", 45, 109, { align: "center", width: 505 });
 
-    // Participant Credentials Block
-    const metaTop = 145;
-    doc.rect(40, metaTop, 515, 60).fillAndStroke("#ffffff", "#94a3b8");
-    doc.moveTo(290, metaTop).lineTo(290, metaTop + 60).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
-    doc.moveTo(40, metaTop + 30).lineTo(555, metaTop + 30).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    // Identity Strip
+    doc.rect(45, 134, 505, 54).fillAndStroke("#f0fdf4", "#86efac");
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#166534").text("REGISTERED PARTICIPANT", 55, 140);
+    doc.font("Helvetica-Bold").fontSize(12).fillColor("#0f172a").text(name.toUpperCase(), 55, 150);
+    doc.font("Helvetica").fontSize(8).fillColor("#475569").text(`Squad: ${team}`, 55, 168);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("PARTICIPANT NAME", 50, metaTop + 5);
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text(name, 50, metaTop + 15);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#166534").text("CATERING PASS ID", 250, 140);
+    doc.font("Courier-Bold").fontSize(11).fillColor("#0f172a").text(passId, 250, 151);
+    doc.font("Helvetica").fontSize(8).fillColor("#475569").text(`Reg Ref: ${regId}`, 250, 168);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("PASS REFERENCE ID", 300, metaTop + 5);
-    doc.font("Courier-Bold").fontSize(10).fillColor("#0f172a").text(regId, 300, metaTop + 15);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#166534").text("DIETARY ALLOCATION", 400, 140);
+    doc.font("Helvetica-Bold").fontSize(10.5).fillColor("#047857").text(diet.toUpperCase(), 400, 151);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text("Jain & Swaminarayan segregated", 400, 168);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("REGISTERED DIETARY PLAN", 50, metaTop + 35);
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text(diet.toUpperCase(), 50, metaTop + 45);
+    // Barcode Scanner Box
+    const bTop = 196;
+    doc.rect(45, bTop, 505, 78).fillAndStroke("#ffffff", "#cbd5e1");
+    if (barcodeBuf) {
+      doc.image(barcodeBuf, 60, bTop + 10, { width: 280, height: 44 });
+      doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Scan at Cafeteria Entry Terminal prior to meal collection", 60, bTop + 60);
+    }
+    if (qrBuf) {
+      doc.image(qrBuf, 400, bTop + 6, { width: 66, height: 66 });
+      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Dining Token QR", 400, bTop + 68, { align: "center", width: 66 });
+    }
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("DINING ALLOCATION", 300, metaTop + 35);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("Main Dining Hall • Segregated Counters", 300, metaTop + 45);
-
-    // Meal Schedule Table
-    const mealTop = 220;
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text("SCHEDULED ON-CAMPUS MEALS & COUPON IDENTIFIERS", 40, mealTop);
-    doc.moveTo(40, mealTop + 14).lineTo(555, mealTop + 14).lineWidth(0.5).strokeColor("#0f172a").stroke();
+    // Section 1: Detailed 7-Meal Timetable
+    const mealTop = bTop + 90;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 1: OFFICIAL 27.5-HOUR CATERING & MEAL TIMETABLE", 45, mealTop);
+    doc.moveTo(45, mealTop + 12).lineTo(550, mealTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
     const meals = [
-      { date: "Dec 15", time: "09:00 AM – 10:30 AM", slot: "Welcome Breakfast, Tea & Refreshments", coupon: "MEAL-B1" },
-      { date: "Dec 15", time: "01:00 PM – 02:30 PM", slot: "Grand Buffet Lunch (Gujarati / North Indian)", coupon: "MEAL-L1" },
-      { date: "Dec 15", time: "05:00 PM – 06:00 PM", slot: "High Tea, Coffee & Traditional Snacks", coupon: "MEAL-T1" },
-      { date: "Dec 15", time: "08:30 PM – 10:00 PM", slot: "Executive Dinner Buffet", coupon: "MEAL-D1" },
-      { date: "Dec 16", time: "01:30 AM – 03:00 AM", slot: "Midnight Energy Boost, Snacks & Beverages", coupon: "MEAL-MN" },
-      { date: "Dec 16", time: "07:30 AM – 09:00 AM", slot: "Sprint Power Breakfast & Fresh Fruit", coupon: "MEAL-B2" },
-      { date: "Dec 16", time: "12:30 PM – 02:00 PM", slot: "Finale Celebration Lunch", coupon: "MEAL-L2" },
+      { id: "M-01", meal: "Welcome Breakfast & Tea", window: "Dec 15 | 08:30 AM - 10:00 AM", loc: "Dining Hall A", menu: "Gujarati Poha, Upma, Idli Sambhar, Fresh Chutneys, Tea & Coffee" },
+      { id: "M-02", meal: "Executive Grand Lunch Buffet", window: "Dec 15 | 01:00 PM - 02:30 PM", loc: "Central Dining Pavilion", menu: "Paneer Lababdar, Gujarati Kadhi, Khichdi, Phulka Roti, Salad & Gulab Jamun" },
+      { id: "M-03", meal: "High Tea & Evening Snacks", window: "Dec 15 | 05:00 PM - 06:00 PM", loc: "Atrium Refreshment Deck", menu: "Khaman Dhokla, Samosa with Mint Dip, Cookies & Masala Chai" },
+      { id: "M-04", meal: "Dinner Buffet & Progress Fuel", window: "Dec 15 | 08:30 PM - 10:00 PM", loc: "Central Dining Pavilion", menu: "Dal Makhani, Mix Veg Curry, Jeera Rice, Tandoori Roti & Shrikhand" },
+      { id: "M-05", meal: "Midnight Energy Boost & Pizza", window: "Dec 16 | 01:30 AM - 02:30 AM", loc: "Tech Lounge Atrium", menu: "Fresh Wood-fired Margherita Pizza, Energy Drinks, Espresso & Cookies" },
+      { id: "M-06", meal: "Day 2 Power Breakfast", window: "Dec 16 | 07:30 AM - 09:00 AM", loc: "Dining Hall A", menu: "Methi Thepla, Batata Poha, Sweet Curd, Fresh Fruits, Tea & Coffee" },
+      { id: "M-07", meal: "Finale Celebration Lunch", window: "Dec 16 | 12:30 PM - 02:00 PM", loc: "Main Banquet Hall", menu: "Royal Gujarati Thali with Puri, Farsan, Dal Baati Churma & Ice Cream" },
     ];
 
-    let rowY = mealTop + 22;
-    doc.rect(40, rowY, 515, 20).fill("#f1f5f9");
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("DATE", 50, rowY + 6);
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("SERVICE WINDOW", 120, rowY + 6);
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("MEAL DESCRIPTION", 250, rowY + 6);
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("COUPON REF", 470, rowY + 6);
+    const mealTableY = mealTop + 18;
+    const mRowH = 34;
+    doc.rect(45, mealTableY, 505, meals.length * mRowH).fillAndStroke("#ffffff", "#94a3b8");
 
-    rowY += 22;
     meals.forEach((m, idx) => {
-      if (idx % 2 === 1) {
-        doc.rect(40, rowY - 2, 515, 22).fill("#f8fafc");
-      }
-      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(m.date, 50, rowY + 3);
-      doc.font("Helvetica").fontSize(8.5).fillColor("#334155").text(m.time, 120, rowY + 3);
-      doc.font("Helvetica").fontSize(8.5).fillColor("#0f172a").text(m.slot, 250, rowY + 3, { width: 210 });
-      doc.font("Courier-Bold").fontSize(9).fillColor("#0f172a").text(m.coupon, 470, rowY + 3);
+      const my = mealTableY + idx * mRowH;
+      if (idx > 0) doc.moveTo(45, my).lineTo(550, my).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+      if (idx % 2 === 1) doc.rect(45, my, 505, mRowH).fill("#f8fafc");
 
-      doc.moveTo(40, rowY + 20).lineTo(555, rowY + 20).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
-      rowY += 24;
+      doc.font("Courier-Bold").fontSize(8).fillColor("#047857").text(m.id, 52, my + 6);
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(m.meal, 85, my + 6);
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#475569").text(m.window, 345, my + 6, { align: "right", width: 195 });
+
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(`Venue: ${m.loc} | Menu:`, 85, my + 19);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#334155").text(m.menu, 205, my + 19, { width: 335, ellipsis: true });
     });
 
-    // Barcode & QR Verification Box
-    const barTop = 445;
-    doc.rect(40, barTop, 515, 115).fillAndStroke("#ffffff", "#94a3b8");
+    // Page 1 footer hint
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#475569").text("[TURN OVER TO PAGE 2 FOR PHYSICAL VOUCHER STAMP GRID & HYGIENE RULES]", 45, 770, { align: "right", width: 505 });
 
-    if (qrBuf) {
-      doc.image(qrBuf, 52, barTop + 10, { width: 95, height: 95 });
-      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Scan at Dining Desk", 52, barTop + 105, { width: 95, align: "center" });
-    }
+    // ──────────────────────── PAGE 2 ────────────────────────
+    doc.addPage();
+    drawPageFrame(doc, 2, 2, regId, "IHUB-HOSP-FP-02", "OFFICIAL FOOD & CATERING COUPON PASS");
 
-    if (barcodeBuf) {
-      doc.image(barcodeBuf, 175, barTop + 15, { width: 250, height: 42 });
-    }
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text(`CAFETERIA BARCODE: ${regId}-FOOD-${diet.slice(0, 3).toUpperCase()}`, 175, barTop + 65);
-    doc.font("Helvetica").fontSize(8).fillColor("#475569").text("Present this pass on your device or in print at the cafeteria turnstiles for electronic verification.", 175, barTop + 78, { width: 360 });
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Dedicated preparation counters are provided for Jain and Swaminarayan requirements.", 175, barTop + 92, { width: 360 });
+    const p2Top = 80;
 
-    // Guidelines Box
-    const noteTop = 580;
-    doc.rect(40, noteTop, 515, 80).fillAndStroke("#fcfcfd", "#cbd5e1");
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("DINING HALL PROTOCOLS & GUIDELINES", 50, noteTop + 10);
+    // Section 2: Special Dietary Segregation Guidelines
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 2: DIETARY INTEGRITY & ALLERGEN PROTOCOLS", 45, p2Top);
+    doc.moveTo(45, p2Top + 12).lineTo(550, p2Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    const diningNotes = [
-      "1. Meal passes are non-transferable and assigned exclusively to the registered participant.",
-      "2. Continuous coffee, tea, and packaged water stations operate 24 hours in all main hacking bays.",
-      "3. All food items must be consumed in designated dining zones; eating at developer stations is prohibited.",
-      "4. Inform the hospitality desk immediately if you experience allergic reactions or require dietary changes.",
+    const dietY = p2Top + 18;
+    doc.rect(45, dietY, 505, 70).fillAndStroke("#ffffff", "#cbd5e1");
+    const dietRules = [
+      { t: "Strict Jain Dietary Standards:", d: "Dedicated counters with zero onion, garlic, or root vegetable ingredients prepared in segregated kitchens." },
+      { t: "Swaminarayan & Satvik Preparation:", d: "Strict satvik cooking adhering to religious purity standards with dedicated serving personnel." },
+      { t: "Allergen Disclosures:", d: "Dairy, gluten, and nut warnings are clearly labeled on every buffet station. Contact hospitality desk for intolerances." },
+      { t: "Continuous Hydration & Beverage Stations:", d: "Purified RO water dispensers, tea, coffee, and energy drinks operate 24 hours non-stop." },
+    ];
+    dietRules.forEach((r, idx) => {
+      const dy = dietY + idx * 17;
+      if (idx > 0) doc.moveTo(45, dy).lineTo(550, dy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text(r.t, 52, dy + 4);
+      doc.font("Helvetica").fontSize(8).fillColor("#475569").text(r.d, 195, dy + 4, { width: 345 });
+    });
+
+    // Section 3: Physical Meal Verification Stamp Grid
+    const stTop = dietY + 84;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 3: PHYSICAL MEAL VOUCHER & STAMP VALIDATION MATRIX", 45, stTop);
+    doc.moveTo(45, stTop + 12).lineTo(550, stTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const stY = stTop + 18;
+    const vouchers = [
+      { code: "V-01", meal: "Day 1 Breakfast", date: "Dec 15 | 08:30 AM" },
+      { code: "V-02", meal: "Day 1 Grand Lunch", date: "Dec 15 | 01:00 PM" },
+      { code: "V-03", meal: "Day 1 High Tea", date: "Dec 15 | 05:00 PM" },
+      { code: "V-04", meal: "Day 1 Dinner Buffet", date: "Dec 15 | 08:30 PM" },
+      { code: "V-05", meal: "Midnight Pizza Boost", date: "Dec 16 | 01:30 AM" },
+      { code: "V-06", meal: "Day 2 Breakfast", date: "Dec 16 | 07:30 AM" },
+      { code: "V-07", meal: "Finale Grand Lunch", date: "Dec 16 | 12:30 PM" },
+      { code: "V-08", meal: "Emergency Refreshment", date: "All Times Standby" },
     ];
 
-    let dnY = noteTop + 24;
-    diningNotes.forEach((note) => {
-      doc.font("Helvetica").fontSize(8).fillColor("#334155").text(note, 50, dnY, { width: 495 });
-      dnY += 13;
+    const boxW = 120;
+    const boxH = 68;
+    const gapX = 8.3;
+    const gapY = 10;
+
+    vouchers.forEach((v, idx) => {
+      const col = idx % 4;
+      const row = Math.floor(idx / 4);
+      const bx = 45 + col * (boxW + gapX);
+      const by = stY + row * (boxH + gapY);
+
+      doc.rect(bx, by, boxW, boxH).fillAndStroke("#ffffff", "#94a3b8");
+      doc.rect(bx, by, boxW, 16).fill("#f1f5f9");
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#047857").text(v.code, bx + 4, by + 4);
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text(v.meal, bx + 30, by + 4, { width: boxW - 34, ellipsis: true });
+
+      doc.font("Helvetica").fontSize(6.5).fillColor("#64748b").text(v.date, bx + 4, by + 20, { align: "center", width: boxW - 8 });
+      doc.rect(bx + 12, by + 32, boxW - 24, 28).strokeColor("#cbd5e1").lineWidth(0.5).stroke();
+      doc.font("Helvetica").fontSize(6).fillColor("#94a3b8").text("CATERING\nOFFICER STAMP", bx + 12, by + 39, { align: "center", width: boxW - 24 });
     });
 
-    // Issuing Authority
-    const authSignTop = 675;
-    doc.rect(40, authSignTop, 515, 85).fillAndStroke("#f8fafc", "#cbd5e1");
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("AUTHORIZED SIGNATURE", 55, authSignTop + 10);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("HOSPITALITY CELL // i-HUB AHMEDABAD", 55, authSignTop + 22);
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("State Student Startup & Innovation Hub, Prajna Puram, Ahmedabad", 55, authSignTop + 34);
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#059669").text("DIGITALLY VALIDATED CATERING PASS", 55, authSignTop + 54);
+    // Section 4: Zero Food Waste & Campus Ecology Charter
+    const ecoTop = stY + 2 * (boxH + gapY) + 12;
+    doc.rect(45, ecoTop, 505, 52).fillAndStroke("#fcfcfd", "#0f172a");
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("ZERO-WASTE & CLEAN CAMPUS DIRECTIVE", 55, ecoTop + 8);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#1e293b").text(
+      "i-Hub operates an eco-conscious zero-waste campus. All meal packaging is 100% biodegradable and compostable. Innovators must segregate dry and wet waste at all designated disposal stations. Food wastage is strictly monitored by student welfare proctors.",
+      55,
+      ecoTop + 20,
+      { width: 485, lineGap: 1.5 }
+    );
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("PARTICIPANT DETAILS", 330, authSignTop + 10);
-    doc.font("Helvetica").fontSize(8.5).fillColor("#0f172a").text(`NAME: ${name.toUpperCase()}`, 330, authSignTop + 22);
-    doc.font("Courier-Bold").fontSize(8.5).fillColor("#0f172a").text(`REF ID: ${regId}`, 330, authSignTop + 36);
-    doc.font("Helvetica").fontSize(8.5).fillColor("#0f172a").text(`PLAN: ${diet}`, 330, authSignTop + 50);
+    // Section 5: Authorized Caterer Validation
+    const signTop = ecoTop + 64;
+    doc.rect(45, signTop, 505, 82).fillAndStroke("#f8fafc", "#94a3b8");
 
-    doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text(`Document Reference: ${regId}-FOOD-PASS • i-Hub Catering Control System`, 40, 792, { align: "center", width: 515 });
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("HOSPITALITY & CATERING IN-CHARGE", 55, signTop + 8);
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("CHEF EXECUTIVE & CATERING OFFICER", 55, signTop + 20);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("State Hospitality Division, i-Hub Ahmedabad", 55, signTop + 32);
+    doc.font("Courier-Bold").fontSize(8).fillColor("#059669").text("OFFICIALLY ENDORSED MEAL COUPON", 55, signTop + 48);
+
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("PARTICIPANT ACKNOWLEDGEMENT", 300, signTop + 8);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#334155").text(`Name: ${name.toUpperCase()} (ID: ${regId})`, 300, signTop + 20);
+    doc.moveTo(300, signTop + 58).lineTo(500, signTop + 58).lineWidth(0.5).strokeColor("#475569").stroke();
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text("Signature of Participant upon Receiving Kit", 300, signTop + 62);
 
     doc.end();
   });
 }
 
 /**
- * 3. Official Campus Security & Anti-Exit Undertaking PDF
- * Formal legal undertaking with clear strict clause, barcode, QR code, and signature fields.
+ * ============================================================================
+ * 3. SECURITY, DISCIPLINARY & ANTI-EXIT STATUTORY UNDERTAKING (2 PAGES)
+ * ============================================================================
  */
 async function generateSecurityUndertakingPdf(data = {}) {
-  const name = (data.participantName || "Alex Rivera").replace(/&amp;/g, "&");
-  const regId = data.registrationId || "IHUB-2026-9842";
-  const team = (data.teamName || "Solo").replace(/&amp;/g, "&");
-  const track = (data.track || "AI, Generative Agents & Automation").replace(/&amp;/g, "&");
+  const name = cleanText(data.participantName || "Alex Rivera");
+  const regId = cleanText(data.registrationId || "IHUB-2026-9842");
+  const team = cleanText(data.teamName || "Solo Innovator");
+  const track = cleanText(data.track || "FinTech & Next-Gen Digital Payments");
+  const college = cleanText(data.college || "Thakur College of Engineering and Technology");
 
   const [barcodeBuf, qrBuf] = await Promise.all([
-    createBarcodeBuffer(`${regId}-SEC`),
-    createQrCodeBuffer(`https://ihubgujarat.in/verify/${regId}?type=security`),
+    createBarcodeBuffer(`${regId}|SEC|STRICT-NO-EXIT`),
+    createQrCodeBuffer(`https://ihubgujarat.in/verify/${regId}?doc=security`),
   ]);
 
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const doc = new PDFDocument({ margin: 30, size: "A4", autoFirstPage: true });
     const buffers = [];
     doc.on("data", buffers.push.bind(buffers));
     doc.on("end", () => resolve(Buffer.concat(buffers)));
     doc.on("error", reject);
 
-    // Frame
-    doc.lineWidth(1).strokeColor("#0f172a").rect(30, 30, 535, 782).stroke();
-    doc.lineWidth(0.5).strokeColor("#94a3b8").rect(34, 34, 527, 774).stroke();
+    // ──────────────────────── PAGE 1 ────────────────────────
+    drawPageFrame(doc, 1, 2, regId, "IHUB-SEC-AGR-03", "SECURITY UNDERTAKING & ANTI-EXIT PROTOCOL");
 
     // Header
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT // i-HUB AHMEDABAD", 40, 50, { align: "center", width: 515 });
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#475569").text("CHIEF PROCTORIAL BOARD & CAMPUS SECURITY CELL", 40, 64, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(8.5).fillColor("#64748b").text("Prajna Puram, KCG Campus, Opp. PRL, Navrangpura, Ahmedabad 380015", 40, 77, { align: "center", width: 515 });
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT - i-HUB AHMEDABAD", 45, 48, { align: "center", width: 505 });
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#334155").text("PROCTORIAL BOARD & CAMPUS CHIEF SECURITY COMMAND", 45, 62, { align: "center", width: 505 });
+    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad 380015 | Control Room: +91 79 2630 1234", 45, 75, { align: "center", width: 505 });
 
-    doc.moveTo(40, 92).lineTo(555, 92).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 88).lineTo(550, 88).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 91).lineTo(550, 91).lineWidth(0.5).strokeColor("#94a3b8").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(13.5).fillColor("#0f172a").text("CAMPUS SECURITY UNDERTAKING & ZERO-TOLERANCE POLICY", 40, 108, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(8.5).fillColor("#475569").text("MANDATORY CLEARANCE DOCUMENT FOR ON-CAMPUS PARTICIPATION", 40, 125, { align: "center", width: 515 });
+    // Document Title
+    doc.rect(45, 102, 505, 26).fillAndStroke("#991b1b", "#991b1b");
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#ffffff").text("STATUTORY ANTI-EXIT AGREEMENT, CAMPUS SECURITY & HARDWARE GATE PASS", 45, 109, { align: "center", width: 505 });
 
-    // Candidate Reference Block
-    const secMetaTop = 142;
-    doc.rect(40, secMetaTop, 515, 48).fillAndStroke("#ffffff", "#94a3b8");
-    doc.moveTo(290, secMetaTop).lineTo(290, secMetaTop + 48).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
-    doc.moveTo(40, secMetaTop + 24).lineTo(555, secMetaTop + 24).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    // Warning Banner
+    doc.rect(45, 134, 505, 34).fillAndStroke("#fef2f2", "#fca5a5");
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#991b1b").text("LEGAL PROCTORIAL INSTRUMENT - BINDING ON ALL 36-HOUR RESIDENTS", 55, 140);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#7f1d1d").text(
+      "This undertaking is executed pursuant to Gujarat Innovation Hub Security Directives. Continuous 27.5-hour campus residence is mandatory. Zero tolerance is strictly maintained for unauthorized perimeter violations.",
+      55,
+      151,
+      { width: 485 }
+    );
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("CANDIDATE FULL NAME", 50, secMetaTop + 4);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text(name, 50, secMetaTop + 13);
+    // Section 1: Candidate Particulars Table
+    const sec1Y = 178;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 1: CANDIDATE IDENTIFICATION & ACCESS RECORD", 45, sec1Y);
+    doc.moveTo(45, sec1Y + 12).lineTo(550, sec1Y + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("SECURITY REGISTRATION ID", 300, secMetaTop + 4);
-    doc.font("Courier-Bold").fontSize(10).fillColor("#0f172a").text(regId, 300, secMetaTop + 13);
+    const tY = sec1Y + 18;
+    doc.rect(45, tY, 505, 52).fillAndStroke("#ffffff", "#cbd5e1");
+    doc.moveTo(45, tY + 26).lineTo(550, tY + 26).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    doc.moveTo(270, tY).lineTo(270, tY + 52).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("AFFILIATED SQUAD / TEAM", 50, secMetaTop + 28);
-    doc.font("Helvetica").fontSize(9).fillColor("#0f172a").text(team, 50, secMetaTop + 37);
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text("CANDIDATE FULL NAME", 52, tY + 4);
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(name.toUpperCase(), 52, tY + 14);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("CHALLENGE DOMAIN", 300, secMetaTop + 28);
-    doc.font("Helvetica").fontSize(9).fillColor("#0f172a").text(track, 300, secMetaTop + 37, { width: 240, ellipsis: true });
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text("SECURITY REGISTRATION ID", 278, tY + 4);
+    doc.font("Courier-Bold").fontSize(8.5).fillColor("#0f172a").text(regId, 278, tY + 14);
 
-    // CRITICAL NOTICE: Anti-Exit Clause
-    const clauseTop = 202;
-    doc.rect(40, clauseTop, 515, 95).fillAndStroke("#fcfcfd", "#0f172a");
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text("STATUTORY ANTI-EXIT & DISQUALIFICATION CLAUSE (NON-NEGOTIABLE)", 50, clauseTop + 10);
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text("INSTITUTION / COLLEGE", 52, tY + 30);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text(college, 52, tY + 40, { width: 210, ellipsis: true });
 
-    const antiExitText =
-      "The i-Hub Gujarat Innovation Hackathon is a closed, secure, 27.5-hour continuous technical event spanning from December 15, 09:00 AM to December 16, 12:30 PM. Participants are strictly prohibited from exiting the official campus gates at Navrangpura during the competition window.\n\n" +
-      "Any participant who exits the campus boundaries without prior written gate authorization issued by the Chief Security Officer and Chief Event Proctor shall face IMMEDIATE DISQUALIFICATION of their entry and their entire team squad. Disqualified candidates will be barred from evaluation, prizes, and future i-Hub initiatives without right of appeal.";
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text("SQUAD / TRACK ALLOCATION", 278, tY + 30);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text(`${team} | ${track}`, 278, tY + 40, { width: 260, ellipsis: true });
 
-    doc.font("Helvetica").fontSize(8.5).fillColor("#1e293b").text(antiExitText, 50, clauseTop + 25, { width: 495, lineGap: 3 });
+    // Barcode Block
+    const barTop = tY + 62;
+    doc.rect(45, barTop, 505, 78).fillAndStroke("#f8fafc", "#cbd5e1");
+    if (barcodeBuf) {
+      doc.image(barcodeBuf, 60, barTop + 10, { width: 280, height: 44 });
+      doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Proctorial Scanner Token - Validated at Perimeter Gate 1 & 2", 60, barTop + 60);
+    }
+    if (qrBuf) {
+      doc.image(qrBuf, 400, barTop + 6, { width: 66, height: 66 });
+      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Gate Security QR", 400, barTop + 68, { align: "center", width: 66 });
+    }
 
-    // Security Rules
-    const secRulesTop = 310;
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECURITY OPERATING DIRECTIVES & PROTOCOLS", 40, secRulesTop);
-    doc.moveTo(40, secRulesTop + 12).lineTo(555, secRulesTop + 12).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
+    // Section 2: Statutory Anti-Exit Clause & Disqualification Statute
+    const lawTop = barTop + 90;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#991b1b").text("SECTION 2: ARTICLE I - STATUTORY ZERO-TOLERANCE ANTI-EXIT CLAUSE", 45, lawTop);
+    doc.moveTo(45, lawTop + 12).lineTo(550, lawTop + 12).lineWidth(0.5).strokeColor("#991b1b").stroke();
 
-    const directives = [
-      "1. Identification Badges: The RFID/NFC hacker badge provided at registration must remain visible around the participant's neck at all times.",
-      "2. Night Perimeter Protocol: Campus exit gates are secured between 10:00 PM and 06:00 AM. 24-hour surveillance cameras and security marshals are deployed.",
-      "3. Equipment Tagging: Personal laptops, tablets, and microcontroller boards must match serial tags logged at the check-in security desk.",
-      "4. Emergency Medical Care: Medical personnel and emergency transport are stationed 24/7 on campus. Report any illness or fatigue to floor marshals.",
-      "5. Zero Tolerance: Possession or use of alcohol, tobacco, e-cigarettes, or prohibited substances is strictly forbidden on government property and will result in police action.",
+    const lawBoxY = lawTop + 18;
+    doc.rect(45, lawBoxY, 505, 114).fillAndStroke("#ffffff", "#fca5a5");
+
+    const articles = [
+      { num: "1.1", text: "CONTINUOUS ON-CAMPUS CONFINEMENT: From official commencement (Dec 15, 11:00 AM) to formal valedictory (Dec 16, 12:30 PM), all candidates must continuously remain within designated i-Hub academic zones." },
+      { num: "1.2", text: "STRICT PERIMETER VIOLATION PENALTY: Stepping outside campus perimeter gates without authorized counter-signed security pass from the Chief Proctor results in IMMEDIATE PERMANENT DISQUALIFICATION of the candidate and their entire squad." },
+      { num: "1.3", text: "FORFEITURE & INSTITUTIONAL NOTICE: In the event of unauthorized exit, all cash awards, incubation grants, certificates, and travel stipends are irrevocably forfeited, and a formal disciplinary report is dispatched to the candidate's Dean/Principal." },
+      { num: "1.4", text: "ROUND 3 MIDNIGHT ELIMINATION CUT: Teams failing to pass the Round 3 Midnight Jury screening (01:30 AM - 04:30 AM) remain in supervised rest lounges until 06:00 AM before scheduled exit." },
     ];
 
-    let dY = secRulesTop + 18;
-    directives.forEach((d) => {
-      doc.font("Helvetica").fontSize(8).fillColor("#334155").text(d, 40, dY, { width: 515, lineGap: 2 });
-      dY += 21;
+    articles.forEach((art, idx) => {
+      const ay = lawBoxY + idx * 28;
+      if (idx > 0) doc.moveTo(45, ay).lineTo(550, ay).lineWidth(0.5).strokeColor("#fee2e2").stroke();
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#991b1b").text(art.num, 52, ay + 4);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#1e293b").text(art.text, 72, ay + 4, { width: 468, lineGap: 1.2 });
     });
 
-    // Verification Barcode & QR Code Section
-    const secCodeTop = 445;
-    doc.rect(40, secCodeTop, 515, 115).fillAndStroke("#ffffff", "#94a3b8");
+    // Section 3: Hardware Inward Declaration Table
+    const hwTop = lawBoxY + 126;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 3: HARDWARE & EQUIPMENT INWARD GATE PASS DECLARATION", 45, hwTop);
+    doc.moveTo(45, hwTop + 12).lineTo(550, hwTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    if (qrBuf) {
-      doc.image(qrBuf, 52, secCodeTop + 10, { width: 95, height: 95 });
-      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Scan to Verify Security Clearance", 45, secCodeTop + 105, { width: 110, align: "center" });
-    }
+    const hwY = hwTop + 18;
+    const hwItems = [
+      { item: "Primary Laptop & Power Adapter", model: "Authorized for Coding Lab", serial: "VERIFIED AT ENTRY", tag: "GATE-PASS-IN" },
+      { item: "Microcontrollers / IoT Development Boards", model: "Raspberry Pi / Arduino / ESP32", serial: "LOGGED IN LAB LOG", tag: "PERMITTED" },
+      { item: "Smartphones & Mobile Testing Devices", model: "Camera & Sensor Enabled", serial: "PERSONAL USE", tag: "PERMITTED" },
+      { item: "High-Draw Appliances (Heaters, Kettles)", model: "RESTRICTED HAZARD", serial: "STRICTLY PROHIBITED", tag: "CONFISCATED" },
+    ];
 
-    if (barcodeBuf) {
-      doc.image(barcodeBuf, 175, secCodeTop + 15, { width: 250, height: 42 });
-    }
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text(`SECURITY CLEARANCE TOKEN: ${regId}-SEC-CLEARED`, 175, secCodeTop + 65);
-    doc.font("Helvetica").fontSize(8).fillColor("#475569").text("This barcode is scanned by gate security upon initial entry and during mandatory badge spot-checks.", 175, secCodeTop + 78, { width: 360 });
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Cryptographically signed via two-factor OTP verification at the time of online portal registration.", 175, secCodeTop + 92, { width: 360 });
+    doc.rect(45, hwY, 505, hwItems.length * 19).fillAndStroke("#ffffff", "#cbd5e1");
+    hwItems.forEach((h, idx) => {
+      const hy = hwY + idx * 19;
+      if (idx > 0) doc.moveTo(45, hy).lineTo(550, hy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text(h.item, 52, hy + 5);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(h.model, 210, hy + 5);
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#0f172a").text(h.serial, 370, hy + 5);
+      doc.font("Helvetica-Bold").fontSize(7).fillColor(h.tag === "CONFISCATED" ? "#dc2626" : "#059669").text(h.tag, 470, hy + 5, { align: "right", width: 70 });
+    });
 
-    // Formal Undertaking Statement
-    const underTop = 580;
-    doc.rect(40, underTop, 515, 80).fillAndStroke("#fcfcfd", "#cbd5e1");
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text("CANDIDATE SOLEMN UNDERTAKING", 50, underTop + 10);
+    // Hint
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#475569").text("[TURN OVER TO PAGE 2 FOR CYBER INTEGRITY, MEDICAL SAFETY & SIGN-OFF]", 45, 770, { align: "right", width: 505 });
 
-    const statement = `I, ${name.toUpperCase()} (Registration ID: ${regId}), hereby formally declare that I have read, understood, and agreed to be bound by the i-Hub Campus Security Guidelines and the strict anti-exit policy. I confirm that I will remain within the authorized perimeter throughout the event window and accept full responsibility for compliance.`;
-    doc.font("Helvetica").fontSize(8.5).fillColor("#334155").text(statement, 50, underTop + 24, { width: 495, lineGap: 2 });
+    // ──────────────────────── PAGE 2 ────────────────────────
+    doc.addPage();
+    drawPageFrame(doc, 2, 2, regId, "IHUB-SEC-AGR-03", "SECURITY UNDERTAKING & ANTI-EXIT PROTOCOL");
 
-    // Signatures
-    const signBoxTop = 675;
-    doc.rect(40, signBoxTop, 515, 85).fillAndStroke("#f8fafc", "#cbd5e1");
+    const p2Top = 80;
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("CAMPUS PROCTOR / SECURITY HEAD", 55, signBoxTop + 10);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("CHIEF SECURITY CELL", 55, signBoxTop + 22);
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("i-Hub Gujarat, Navrangpura, Ahmedabad", 55, signBoxTop + 34);
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#059669").text("STATUS: ELECTRONIC CLEARANCE RECORDED", 55, signBoxTop + 54);
+    // Section 4: Cyber-Security & IP Policy
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 4: CYBER CONDUCT, NETWORK INTEGRITY & INTELLECTUAL PROPERTY", 45, p2Top);
+    doc.moveTo(45, p2Top + 12).lineTo(550, p2Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("DIGITALLY SIGNED BY CANDIDATE", 330, signBoxTop + 10);
-    doc.font("Helvetica").fontSize(8.5).fillColor("#0f172a").text(`NAME: ${name.toUpperCase()}`, 330, signBoxTop + 22);
-    doc.font("Courier-Bold").fontSize(8.5).fillColor("#0f172a").text(`REF ID: ${regId}`, 330, signBoxTop + 36);
-    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Signed via 2FA verification on registration portal.", 330, signBoxTop + 50);
+    const netY = p2Top + 18;
+    doc.rect(45, netY, 505, 84).fillAndStroke("#ffffff", "#cbd5e1");
 
-    doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text(`Document Reference: ${regId}-UNDERTAKING • Official i-Hub Security Record`, 40, 792, { align: "center", width: 515 });
+    const netRules = [
+      { t: "Campus Network Honor Code:", d: "Strict ban on ARP spoofing, packet sniffing, unauthorized port scanning, or intrusive penetration against peer devices or venue network." },
+      { t: "Originality & Plagiarism Statute:", d: "All code must be authored afresh during the official 27.5-hour period. Open-source libraries must be declared in repo README." },
+      { t: "Substance & Behavioral Zero-Tolerance:", d: "Possession or consumption of alcohol, narcotics, smoking devices, or contraband is strictly banned under Gujarat state laws." },
+      { t: "Intellectual Property Ownership:", d: "Innovators retain 100% intellectual property ownership of their source code, patents, and prototypes developed at i-Hub." },
+    ];
+
+    netRules.forEach((r, idx) => {
+      const ny = netY + idx * 21;
+      if (idx > 0) doc.moveTo(45, ny).lineTo(550, ny).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text(r.t, 52, ny + 4);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(r.d, 195, ny + 4, { width: 345, lineGap: 1.2 });
+    });
+
+    // Section 5: Medical Fitness & Emergency Response Protocols
+    const medTop = netY + 98;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 5: MEDICAL DISCLOSURE, FIRST AID & EMERGENCY RESPONSE", 45, medTop);
+    doc.moveTo(45, medTop + 12).lineTo(550, medTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const medY = medTop + 18;
+    doc.rect(45, medY, 505, 78).fillAndStroke("#ffffff", "#cbd5e1");
+
+    const medPoints = [
+      { q: "Pre-existing Medical Conditions / Allergies:", a: "None declared (Fit for intensive 27.5-hour innovation sprint)." },
+      { q: "On-site 24x7 Medical Station:", a: "Room 104, Ground Floor (Doctor on duty, paramedic and basic trauma life support)." },
+      { q: "Designated Emergency Trauma Hospital:", a: "Civil Hospital Ahmedabad / Sterling Hospital (Dedicated emergency ambulance on campus)." },
+      { q: "Campus Emergency Helpline:", a: "+91 98250 11223 (Medical Officer) | +91 79 2630 1234 (Command Center)" },
+    ];
+
+    medPoints.forEach((p, idx) => {
+      const py = medY + idx * 19.5;
+      if (idx > 0) doc.moveTo(45, py).lineTo(550, py).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#334155").text(p.q, 52, py + 5);
+      doc.font("Helvetica").fontSize(8).fillColor("#0f172a").text(p.a, 245, py + 5, { width: 295 });
+    });
+
+    // Section 6: Three-Tier Sign-Off Section
+    const signTop = medY + 96;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 6: TRIPARTITE LEGAL AFFIRMATION & ENDORSEMENT", 45, signTop);
+    doc.moveTo(45, signTop + 12).lineTo(550, signTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const sY = signTop + 18;
+    doc.rect(45, sY, 505, 126).fillAndStroke("#f8fafc", "#94a3b8");
+
+    // Tier 1: Candidate
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("1. CANDIDATE SOLEMN UNDERTAKING", 55, sY + 8);
+    doc.font("Helvetica").fontSize(7).fillColor("#334155").text(
+      "I solemnly swear that I have meticulously read the anti-exit regulations. I accept that exiting campus without permission causes instant disqualification.",
+      55,
+      sY + 18,
+      { width: 220, lineGap: 1 }
+    );
+    doc.moveTo(55, sY + 54).lineTo(235, sY + 54).lineWidth(0.5).strokeColor("#475569").stroke();
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text(`Signature: ${name.toUpperCase()}`, 55, sY + 58);
+
+    // Tier 2: Parent/Guardian
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("2. PARENTAL / GUARDIAN AFFIRMATION", 285, sY + 8);
+    doc.font("Helvetica").fontSize(7).fillColor("#334155").text(
+      "I have permitted my ward to participate in this overnight hackathon and accept all proctorial supervision policies of i-Hub Gujarat.",
+      285,
+      sY + 18,
+      { width: 240, lineGap: 1 }
+    );
+    doc.moveTo(285, sY + 54).lineTo(480, sY + 54).lineWidth(0.5).strokeColor("#475569").stroke();
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text("Signature / OTP 2FA Verified by Parent", 285, sY + 58);
+
+    // Tier 3: Chief Proctor
+    doc.moveTo(45, sY + 74).lineTo(550, sY + 74).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("3. CHIEF PROCTOR & CAMPUS SECURITY WARDEN ENDORSEMENT", 55, sY + 80);
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("OFFICE OF THE CHIEF SECURITY OFFICER - i-HUB AHMEDABAD", 55, sY + 92);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Prajna Puram, Navrangpura, Ahmedabad 380015 | Seal & Security Sign-off", 55, sY + 104);
+
+    doc.rect(430, sY + 78, 105, 42).strokeColor("#94a3b8").lineWidth(0.5).stroke();
+    doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#059669").text("CAMPUS SECURITY GATE\nCHECK-IN CLEARED\nINWARD PERMIT", 430, sY + 86, { align: "center", width: 105 });
 
     doc.end();
   });
 }
 
 /**
- * 4. Official Parental & Guardian Approval Form PDF
- * Clean, structured consent letter with guardian authorization, emergency phone, and verification codes.
+ * ============================================================================
+ * 4. PARENTAL & GUARDIAN OVERNIGHT PARTICIPATION CONSENT FORM (2 PAGES)
+ * ============================================================================
  */
 async function generateParentalConsentPdf(data = {}) {
-  const name = (data.participantName || "Alex Rivera").replace(/&amp;/g, "&");
-  const regId = data.registrationId || "IHUB-2026-9842";
-  const parentName = (data.parentName || data.parentalApproval?.parentName || "Parent / Guardian").replace(/&amp;/g, "&");
-  const parentPhone = data.parentPhone || data.parentalApproval?.parentPhone || "+91 98765 00000";
-  const relationship = data.relationship || data.parentalApproval?.relationship || "Guardian";
+  const name = cleanText(data.participantName || "Alex Rivera");
+  const regId = cleanText(data.registrationId || "IHUB-2026-9842");
+  const parentName = cleanText(data.parentName || (data.parentalApproval && data.parentalApproval.parentName) || "Jagdish Suthar");
+  const parentPhone = cleanText(data.parentPhone || (data.parentalApproval && data.parentalApproval.parentPhone) || "9768440000");
+  const parentEmail = cleanText(data.parentEmail || (data.parentalApproval && data.parentalApproval.parentEmail) || "hiteshsutharbackup@gmail.com");
+  const college = cleanText(data.college || "Thakur College of Engineering and Technology");
+  const dateStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
   const [barcodeBuf, qrBuf] = await Promise.all([
-    createBarcodeBuffer(`${regId}-PARENT`),
-    createQrCodeBuffer(`https://ihubgujarat.in/verify/${regId}?type=parental`),
+    createBarcodeBuffer(`${regId}|PARENT|${parentPhone}`),
+    createQrCodeBuffer(`https://ihubgujarat.in/verify/${regId}?doc=parental`),
   ]);
 
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const doc = new PDFDocument({ margin: 30, size: "A4", autoFirstPage: true });
     const buffers = [];
     doc.on("data", buffers.push.bind(buffers));
     doc.on("end", () => resolve(Buffer.concat(buffers)));
     doc.on("error", reject);
 
-    // Frame
-    doc.lineWidth(1).strokeColor("#0f172a").rect(30, 30, 535, 782).stroke();
-    doc.lineWidth(0.5).strokeColor("#94a3b8").rect(34, 34, 527, 774).stroke();
+    // ──────────────────────── PAGE 1 ────────────────────────
+    drawPageFrame(doc, 1, 2, regId, "IHUB-PAR-CON-04", "PARENTAL OVERNIGHT PARTICIPATION CONSENT");
 
     // Header
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT // i-HUB AHMEDABAD", 40, 50, { align: "center", width: 515 });
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#475569").text("STUDENT WELFARE & GUARDIAN OVERSIGHT CELL", 40, 64, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(8.5).fillColor("#64748b").text("Prajna Puram, KCG Campus, Navrangpura, Ahmedabad 380015", 40, 77, { align: "center", width: 515 });
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT - i-HUB AHMEDABAD", 45, 48, { align: "center", width: 505 });
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#334155").text("STUDENT WELFARE & PARENTAL LIAISON DIVISION", 45, 62, { align: "center", width: 505 });
+    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("KCG Campus, Opp. PRL, Navrangpura, Ahmedabad 380015 | Student Welfare Desk", 45, 75, { align: "center", width: 505 });
 
-    doc.moveTo(40, 92).lineTo(555, 92).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 88).lineTo(550, 88).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 91).lineTo(550, 91).lineWidth(0.5).strokeColor("#94a3b8").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(13.5).fillColor("#0f172a").text("PARENT / GUARDIAN APPROVAL & OVERNIGHT CONSENT FORM", 40, 108, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(8.5).fillColor("#475569").text("FORMAL AUTHORIZATION FOR 27.5-HOUR ON-CAMPUS PARTICIPATION", 40, 125, { align: "center", width: 515 });
+    // Document Title
+    doc.rect(45, 102, 505, 26).fillAndStroke("#1e3a8a", "#1e3a8a");
+    doc.font("Helvetica-Bold").fontSize(11.5).fillColor("#ffffff").text("FORMAL PARENTAL / GUARDIAN OVERNIGHT CONSENT & MEDICAL APPROVAL", 45, 109, { align: "center", width: 505 });
 
-    // Details Grid
-    const pMetaTop = 142;
-    doc.rect(40, pMetaTop, 515, 60).fillAndStroke("#ffffff", "#94a3b8");
-    doc.moveTo(290, pMetaTop).lineTo(290, pMetaTop + 60).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
-    doc.moveTo(40, pMetaTop + 30).lineTo(555, pMetaTop + 30).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    // Official Memo Notice
+    doc.rect(45, 134, 505, 42).fillAndStroke("#eff6ff", "#bfdbfe");
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#1e40af").text("FORMAL DISPATCH TO PARENT / LEGAL GUARDIAN", 55, 140);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#1e3a8a").text(
+      `Dear ${parentName}, this document records your official consent for your son/daughter/ward, ${name}, to participate in the overnight 27.5-hour i-Hub Gujarat Innovation Hackathon 2026. Please inspect the event scope, residential security guarantees, and emergency contacts below.`,
+      55,
+      151,
+      { width: 485, lineGap: 1.5 }
+    );
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("STUDENT / CANDIDATE NAME", 50, pMetaTop + 5);
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text(name, 50, pMetaTop + 15);
+    // Section 1: Candidate & Parent Information Matrix
+    const sec1Top = 186;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 1: PARTICIPANT & PARENT IDENTITY REGISTRATION", 45, sec1Top);
+    doc.moveTo(45, sec1Top + 12).lineTo(550, sec1Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("STUDENT REGISTRATION ID", 300, pMetaTop + 5);
-    doc.font("Courier-Bold").fontSize(10).fillColor("#0f172a").text(regId, 300, pMetaTop + 15);
+    const tY = sec1Top + 18;
+    const rH = 24;
+    doc.rect(45, tY, 505, rH * 5).fillAndStroke("#ffffff", "#94a3b8");
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("PARENT / GUARDIAN FULL NAME", 50, pMetaTop + 35);
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text(parentName, 50, pMetaTop + 45);
+    for (let i = 1; i < 5; i++) {
+      doc.moveTo(45, tY + i * rH).lineTo(550, tY + i * rH).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    }
+    doc.moveTo(270, tY).lineTo(270, tY + rH * 5).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("RELATIONSHIP & EMERGENCY CONTACT", 300, pMetaTop + 35);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text(`${relationship.toUpperCase()} • ${parentPhone}`, 300, pMetaTop + 45);
-
-    // Terms of Consent Box
-    const termsTop = 220;
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text("TERMS OF PARENTAL / GUARDIAN AUTHORIZATION", 40, termsTop);
-    doc.moveTo(40, termsTop + 12).lineTo(555, termsTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
-
-    const clauses = [
-      "1. Overnight Campus Presence: I hereby grant formal authorization for my child/ward to stay on-campus overnight at i-Hub Ahmedabad (Navrangpura) from December 15, 09:00 AM to December 16, 12:30 PM for the innovation hackathon.",
-      "2. Security Boundaries & Compliance: I acknowledge that my child/ward must remain strictly within the monitored i-Hub campus perimeter throughout the competition window and that unauthorized exit results in instant disqualification.",
-      "3. Medical Care Consent: In the case of acute illness, fatigue, or accident, I authorize certified i-Hub first responders to administer immediate emergency aid and, if required, transfer to a partner hospital.",
-      "4. Emergency Availability: I affirm that the emergency telephone contact provided on this form will remain reachable 24 hours a day during the event window.",
-      "5. Electronic Signature Validity: I verify that this consent form was reviewed, authorized, and validated through two-factor email OTP verification.",
+    const pRows = [
+      { l1: "STUDENT / CANDIDATE NAME", v1: name.toUpperCase(), l2: "REGISTRATION REFERENCE", v2: regId },
+      { l1: "COLLEGE / INSTITUTION", v1: college, l2: "STUDENT STATUS", v2: "Regular Bonafide Student" },
+      { l1: "PARENT / GUARDIAN FULL NAME", v1: parentName, l2: "RELATIONSHIP TO APPLICANT", v2: "Parent / Legal Guardian" },
+      { l1: "PRIMARY EMERGENCY CONTACT", v1: parentPhone, l2: "PARENT REGISTERED EMAIL", v2: parentEmail },
+      { l1: "OVERNIGHT RESIDENTIAL CAMPUS", v1: "i-Hub Campus, Ahmedabad", l2: "CONSENT VERIFICATION STATUS", v2: "Dual-OTP 2FA Authenticated" },
     ];
 
-    let cY = termsTop + 20;
-    clauses.forEach((c) => {
-      doc.font("Helvetica").fontSize(8.5).fillColor("#334155").text(c, 40, cY, { width: 515, lineGap: 3 });
-      cY += 29;
+    pRows.forEach((r, idx) => {
+      const cy = tY + idx * rH;
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(r.l1, 52, cy + 4);
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(r.v1, 52, cy + 13, { width: 210, ellipsis: true });
+
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(r.l2, 278, cy + 4);
+      doc.font(idx === 0 ? "Courier-Bold" : "Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text(r.v2, 278, cy + 13, { width: 260, ellipsis: true });
     });
 
-    // Verification Barcode & QR Code Section
-    const pCodeTop = 385;
-    doc.rect(40, pCodeTop, 515, 115).fillAndStroke("#ffffff", "#94a3b8");
-
-    if (qrBuf) {
-      doc.image(qrBuf, 52, pCodeTop + 10, { width: 95, height: 95 });
-      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Scan to Verify Consent", 45, pCodeTop + 105, { width: 110, align: "center" });
-    }
-
+    // Barcode & QR Block
+    const barTop = tY + rH * 5 + 14;
+    doc.rect(45, barTop, 505, 80).fillAndStroke("#f8fafc", "#cbd5e1");
     if (barcodeBuf) {
-      doc.image(barcodeBuf, 175, pCodeTop + 15, { width: 250, height: 42 });
+      doc.image(barcodeBuf, 60, barTop + 10, { width: 280, height: 44 });
+      doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Parental Approval Security Hash (Logged in Admissions Audit Vault)", 60, barTop + 60);
     }
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text(`PARENTAL CLEARANCE IDENTIFIER: ${regId}-PARENT-VERIFIED`, 175, pCodeTop + 65);
-    doc.font("Helvetica").fontSize(8).fillColor("#475569").text("This record confirms that parental consent has been officially validated by i-Hub Admissions Board.", 175, pCodeTop + 78, { width: 360 });
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text(`Primary Emergency Contact on record: ${parentPhone} (${relationship}).`, 175, pCodeTop + 92, { width: 360 });
+    if (qrBuf) {
+      doc.image(qrBuf, 400, barTop + 6, { width: 66, height: 66 });
+      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Parent Audit QR", 400, barTop + 68, { align: "center", width: 66 });
+    }
 
-    // Official 24/7 Helpdesk Box
-    const helpTop = 520;
-    doc.rect(40, helpTop, 515, 60).fillAndStroke("#fcfcfd", "#cbd5e1");
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("24/7 DEDICATED PARENT HELPDESK & CONTROL ROOM", 50, helpTop + 10);
-    doc.font("Helvetica").fontSize(8.5).fillColor("#334155").text("Control Room Phone: +91 79 2630 0000 / +91 98765 00000  |  Email: emergency@ihubgujarat.in", 50, helpTop + 24);
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Campus Address: Prajna Puram, KCG Campus, Opp. Physical Research Laboratory (PRL), Navrangpura, Ahmedabad 380015", 50, helpTop + 38);
+    // Section 2: Hackathon Operational Schedule & Reporting Hours
+    const schTop = barTop + 94;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 2: EVENT SCOPE, RESIDENTIAL SCHEDULE & VENUE TIMINGS", 45, schTop);
+    doc.moveTo(45, schTop + 12).lineTo(550, schTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    // Signatures Block
-    const pSignTop = 600;
-    doc.rect(40, pSignTop, 515, 90).fillAndStroke("#f8fafc", "#cbd5e1");
+    const schBoxY = schTop + 18;
+    doc.rect(45, schBoxY, 505, 84).fillAndStroke("#ffffff", "#cbd5e1");
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("STUDENT WELFARE CELL", 55, pSignTop + 10);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("i-HUB ADMISSIONS & WELFARE BOARD", 55, pSignTop + 22);
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Government of Gujarat Innovation Hub, Ahmedabad", 55, pSignTop + 34);
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#059669").text("STATUS: DIGITALLY RATIFIED VIA PORTAL 2FA", 55, pSignTop + 54);
+    const schedItems = [
+      { f: "Check-in & Reporting Window:", d: "Friday, December 15, 2026 | 08:30 AM to 09:30 AM IST (Parents may escort candidate)" },
+      { f: "27.5-Hour Non-Stop Sprint:", d: "Commences Dec 15 at 11:00 AM; concludes Saturday, December 16 at 12:30 PM" },
+      { f: "Overnight Accommodation:", d: "Dedicated, secure indoor rest dormitories on campus with female/male segregation" },
+      { f: "Grand Valedictory & Release:", d: "Saturday, December 16, 2026 | 12:30 PM to 01:30 PM (Departure authorized)" },
+      { f: "Campus Boundary Enforcement:", d: "Gates are locked throughout the event. Candidates cannot exit under any circumstance." },
+    ];
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("PARENT / GUARDIAN CONFIRMATION", 330, pSignTop + 10);
-    doc.font("Helvetica").fontSize(8.5).fillColor("#0f172a").text(`NAME: ${parentName.toUpperCase()}`, 330, pSignTop + 22);
-    doc.font("Helvetica").fontSize(8).fillColor("#334155").text(`RELATION: ${relationship}  |  PHONE: ${parentPhone}`, 330, pSignTop + 36);
-    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Electronically authenticated by parent code verification.", 330, pSignTop + 50);
+    schedItems.forEach((s, idx) => {
+      const sy = schBoxY + idx * 16.5;
+      if (idx > 0) doc.moveTo(45, sy).lineTo(550, sy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text(s.f, 52, sy + 3.5);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(s.d, 195, sy + 3.5, { width: 345 });
+    });
 
-    doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text(`Document Reference: ${regId}-PARENTAL-CONSENT • Authorized i-Hub Legal Instrument`, 40, 792, { align: "center", width: 515 });
+    // Hint
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#475569").text("[TURN OVER TO PAGE 2 FOR RESIDENTIAL GUARANTEES, MEDICAL CONSENT & SIGNATURES]", 45, 770, { align: "right", width: 505 });
+
+    // ──────────────────────── PAGE 2 ────────────────────────
+    doc.addPage();
+    drawPageFrame(doc, 2, 2, regId, "IHUB-PAR-CON-04", "PARENTAL OVERNIGHT PARTICIPATION CONSENT");
+
+    const p2Top = 80;
+
+    // Section 3: Campus Safety, Supervision & Welfare Guarantees
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 3: RESIDENTIAL SUPERVISION, DORMITORY SAFETY & WELFARE GUARANTEES", 45, p2Top);
+    doc.moveTo(45, p2Top + 12).lineTo(550, p2Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const safeY = p2Top + 18;
+    doc.rect(45, safeY, 505, 96).fillAndStroke("#ffffff", "#cbd5e1");
+
+    const safePoints = [
+      { t: "1. 24x7 Security & CCTV Surveillance:", d: "The entire 5-acre i-Hub campus is monitored continuously by high-definition CCTV cameras and licensed security personnel with restricted perimeter access." },
+      { t: "2. Segregated Rest & Dormitory Lounges:", d: "Dedicated, air-conditioned resting spaces are provisioned with strict gender segregation. Female dormitories are managed exclusively by female wardens and guards." },
+      { t: "3. On-Site Medical Desk & Paramedics:", d: "A fully equipped primary health center operates 24 hours with certified physicians, emergency medicines, and an on-call ambulance." },
+      { t: "4. Wholesome Hygienic Catering:", d: "All 7 meals and midnight snacks are prepared fresh by certified FSSAI caterers on campus. Purified water stations are located across every laboratory." },
+    ];
+
+    safePoints.forEach((sp, idx) => {
+      const spy = safeY + idx * 24;
+      if (idx > 0) doc.moveTo(45, spy).lineTo(550, spy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text(sp.t, 52, spy + 4);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(sp.d, 52, spy + 14, { width: 485, lineGap: 1 });
+    });
+
+    // Section 4: Emergency Medical Authorization
+    const medTop = safeY + 110;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 4: EMERGENCY MEDICAL TREATMENT AUTHORIZATION", 45, medTop);
+    doc.moveTo(45, medTop + 12).lineTo(550, medTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const medBoxY = medTop + 18;
+    doc.rect(45, medBoxY, 505, 66).fillAndStroke("#fcfcfd", "#0f172a");
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text("STATUTORY MEDICAL EMPOWERMENT COVENANT", 55, medBoxY + 8);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#1e293b").text(
+      "In the improbable event of acute illness, injury, or medical emergency, I hereby empower the designated Medical Officer and Student Welfare Committee of i-Hub Gujarat to administer emergency first aid, prescribe medications, or arrange hospital admission (Civil Hospital / Sterling Hospital) while promptly notifying me via the emergency contact numbers on record.",
+      55,
+      medBoxY + 20,
+      { width: 485, lineGap: 1.5 }
+    );
+
+    // Section 5: Digital 2FA Verification Audit Record
+    const auditTop = medBoxY + 78;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 5: DIGITAL 2FA AUTHENTICATION AUDIT TRAIL", 45, auditTop);
+    doc.moveTo(45, auditTop + 12).lineTo(550, auditTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const aBoxY = auditTop + 18;
+    doc.rect(45, aBoxY, 505, 46).fillAndStroke("#ffffff", "#cbd5e1");
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text("PARENT EMAIL AUTHENTICATED:", 52, aBoxY + 6);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#4f46e5").text(parentEmail, 200, aBoxY + 6);
+
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text("6-DIGIT OTP AUDIT VERIFIED:", 52, aBoxY + 20);
+    doc.font("Courier-Bold").fontSize(7.5).fillColor("#059669").text("PASS (Cryptographically Verified)", 200, aBoxY + 20);
+
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text("TIMESTAMP OF CONSENT:", 52, aBoxY + 34);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(`${dateStr} | Logged via i-Hub Portal Gateway`, 200, aBoxY + 34);
+
+    // Section 6: Formal Signatures & Parental Declaration
+    const signTop = aBoxY + 58;
+    doc.rect(45, signTop, 505, 96).fillAndStroke("#f8fafc", "#94a3b8");
+
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("PARENT / GUARDIAN SIGNATURE & AFFIRMATION", 55, signTop + 8);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#334155").text(
+      "I confirm that I have willingly permitted my ward to participate in the i-Hub Gujarat Innovation Hackathon 2026 and agree to all terms stated herein.",
+      55,
+      signTop + 20,
+      { width: 230, lineGap: 1.2 }
+    );
+    doc.moveTo(55, signTop + 68).lineTo(235, signTop + 68).lineWidth(0.5).strokeColor("#475569").stroke();
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text(`Signature: ${parentName}`, 55, signTop + 72);
+    doc.font("Helvetica").fontSize(7).fillColor("#64748b").text(`Date: ${dateStr} | Mobile: ${parentPhone}`, 55, signTop + 82);
+
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("i-HUB ADMISSIONS & WELFARE BOARD", 305, signTop + 8);
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("DIRECTORATE OF STUDENT INNOVATION", 305, signTop + 20);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Government of Gujarat Innovation Hub, Ahmedabad", 305, signTop + 32);
+    doc.font("Courier-Bold").fontSize(8).fillColor("#059669").text("CONSENT DULY RECORDED & ARCHIVED", 305, signTop + 48);
+
+    doc.rect(450, signTop + 14, 85, 68).strokeColor("#94a3b8").lineWidth(0.5).stroke();
+    doc.font("Helvetica").fontSize(6.5).fillColor("#94a3b8").text("PARENTAL\nCONSENT\nAUDIT SEAL", 450, signTop + 34, { align: "center", width: 85 });
 
     doc.end();
   });
 }
 
 /**
- * 5. Official Master Hacker Boarding Pass PDF
- * The official credential required for campus entry, kit bag retrieval, and hacking booth assignment.
+ * ============================================================================
+ * 5. MASTER OFFICIAL HACKER BOARDING PASS (2 PAGES)
+ * ============================================================================
  */
 async function generateOfficialHackerPassPdf(data = {}) {
-  const name = (data.participantName || "Alex Rivera").replace(/&amp;/g, "&");
-  const regId = data.registrationId || "IHUB-2026-9842";
-  const team = (data.teamName || "Solo").replace(/&amp;/g, "&");
-  const track = (data.track || "AI, Generative Agents & Automation").replace(/&amp;/g, "&");
-  const booth = (data.boothNumber || "Booth #A-14").replace(/&amp;/g, "&");
-  const diet = (data.foodPreference || "Pure Vegetarian").replace(/&amp;/g, "&");
+  const name = cleanText(data.participantName || "Alex Rivera");
+  const regId = cleanText(data.registrationId || "IHUB-2026-9842");
+  const team = cleanText(data.teamName || "Solo Innovator");
+  const track = cleanText(data.track || "FinTech & Next-Gen Digital Payments");
+  const booth = cleanText(data.boothNumber || "Booth #A-14");
+  const diet = cleanText(data.foodPreference || "Pure Vegetarian");
 
   const [barcodeBuf, qrBuf] = await Promise.all([
-    createBarcodeBuffer(regId),
+    createBarcodeBuffer(`${regId}|MASTER-PASS|${booth}`),
     createQrCodeBuffer(`https://ihubgujarat.in/pass/${regId}`),
   ]);
 
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const doc = new PDFDocument({ margin: 30, size: "A4", autoFirstPage: true });
     const buffers = [];
     doc.on("data", buffers.push.bind(buffers));
     doc.on("end", () => resolve(Buffer.concat(buffers)));
     doc.on("error", reject);
 
-    // Frame
-    doc.lineWidth(1).strokeColor("#0f172a").rect(30, 30, 535, 782).stroke();
-    doc.lineWidth(0.5).strokeColor("#94a3b8").rect(34, 34, 527, 774).stroke();
+    // ──────────────────────── PAGE 1 ────────────────────────
+    drawPageFrame(doc, 1, 2, regId, "IHUB-BOARD-PASS-05", "MASTER OFFICIAL HACKER BOARDING PASS");
 
-    // Institutional Header
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT // i-HUB AHMEDABAD", 40, 50, { align: "center", width: 515 });
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#475569").text("GUJARAT STUDENT STARTUP AND INNOVATION HUB", 40, 64, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(8.5).fillColor("#64748b").text("Prajna Puram, KCG Campus, Opp. PRL, Navrangpura, Ahmedabad 380015", 40, 77, { align: "center", width: 515 });
+    // Header
+    doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e293b").text("GOVERNMENT OF GUJARAT - i-HUB AHMEDABAD", 45, 48, { align: "center", width: 505 });
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#334155").text("GUJARAT INNOVATION HACKATHON 2026 - OFFICIAL BOARDING PASS", 45, 62, { align: "center", width: 505 });
+    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Prajna Puram, Opp. PRL, Navrangpura, Ahmedabad 380015 | Physical Access Docket", 45, 75, { align: "center", width: 505 });
 
-    doc.moveTo(40, 92).lineTo(555, 92).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 88).lineTo(550, 88).lineWidth(1).strokeColor("#0f172a").stroke();
+    doc.moveTo(45, 91).lineTo(550, 91).lineWidth(0.5).strokeColor("#94a3b8").stroke();
 
-    doc.font("Helvetica-Bold").fontSize(15).fillColor("#0f172a").text("OFFICIAL HACKER BOARDING PASS", 40, 108, { align: "center", width: 515 });
-    doc.font("Helvetica").fontSize(9).fillColor("#475569").text("i-HUB GUJARAT INNOVATION HACKATHON 2026", 40, 126, { align: "center", width: 515 });
+    // Boarding Pass Block
+    doc.rect(45, 102, 505, 26).fillAndStroke("#312e81", "#312e81");
+    doc.font("Helvetica-Bold").fontSize(12).fillColor("#ffffff").text("OFFICIAL HACKER BOARDING PASS & ACCESS PERMIT", 45, 109, { align: "center", width: 505 });
 
-    // Primary Credentials Grid
-    const passMetaTop = 145;
-    doc.rect(40, passMetaTop, 515, 80).fillAndStroke("#ffffff", "#94a3b8");
-    doc.moveTo(290, passMetaTop).lineTo(290, passMetaTop + 80).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
-    doc.moveTo(40, passMetaTop + 40).lineTo(555, passMetaTop + 40).lineWidth(0.5).strokeColor("#e2e8f0").stroke();
+    // Hacker details grid
+    const gTop = 138;
+    doc.rect(45, gTop, 505, 110).fillAndStroke("#ffffff", "#94a3b8");
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("HACKER NAME", 50, passMetaTop + 6);
-    doc.font("Helvetica-Bold").fontSize(12).fillColor("#0f172a").text(name, 50, passMetaTop + 18);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#4f46e5").text("DELEGATE / INNOVATOR NAME", 55, gTop + 10);
+    doc.font("Helvetica-Bold").fontSize(14).fillColor("#0f172a").text(name.toUpperCase(), 55, gTop + 22);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("BOARDING PASS REF ID", 300, passMetaTop + 6);
-    doc.font("Courier-Bold").fontSize(13).fillColor("#0f172a").text(regId, 300, passMetaTop + 18);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#4f46e5").text("REGISTRATION REF", 55, gTop + 44);
+    doc.font("Courier-Bold").fontSize(11).fillColor("#0f172a").text(regId, 55, gTop + 56);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("SQUAD / TEAM NAME", 50, passMetaTop + 46);
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#0f172a").text(team, 50, passMetaTop + 58);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#4f46e5").text("SQUAD / SQUAD TRACK", 55, gTop + 76);
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text(`${team} | ${track}`, 55, gTop + 88, { width: 240, ellipsis: true });
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("ALLOCATED HACKING BOOTH", 300, passMetaTop + 46);
-    doc.font("Helvetica-Bold").fontSize(11).fillColor("#0f172a").text(booth, 300, passMetaTop + 58);
+    // Right side highlights
+    doc.rect(320, gTop + 10, 215, 90).fillAndStroke("#f1f5f9", "#cbd5e1");
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("ASSIGNED WORKSPACE BOOTH", 330, gTop + 18);
+    doc.font("Helvetica-Bold").fontSize(14).fillColor("#4f46e5").text(booth, 330, gTop + 30);
 
-    // Logistics & Event Window
-    const logTop = 235;
-    doc.rect(40, logTop, 515, 52).fillAndStroke("#f8fafc", "#cbd5e1");
-    doc.moveTo(290, logTop).lineTo(290, logTop + 52).lineWidth(0.5).strokeColor("#cbd5e1").stroke();
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("DIETARY COUNTER PASS", 330, gTop + 54);
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#059669").text(diet.toUpperCase(), 330, gTop + 66);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("CHALLENGE DOMAIN", 50, logTop + 6);
-    doc.font("Helvetica").fontSize(9.5).fillColor("#0f172a").text(track, 50, logTop + 18, { width: 230, ellipsis: true });
-    doc.font("Helvetica").fontSize(8).fillColor("#475569").text(`Catering Plan: ${diet}`, 50, logTop + 34);
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a").text("DEC 15, 09:00 AM - DEC 16, 12:30 PM", 330, gTop + 84);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b").text("CHECK-IN TIME & VENUE", 300, logTop + 6);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("Monday, Dec 15, 2026 @ 09:00 AM IST", 300, logTop + 18);
-    doc.font("Helvetica").fontSize(8).fillColor("#475569").text("i-Hub Campus Porch, Navrangpura, Ahmedabad", 300, logTop + 34);
-
-    // Scanner Barcode & QR Code
-    const passCodeTop = 298;
-    doc.rect(40, passCodeTop, 515, 120).fillAndStroke("#ffffff", "#94a3b8");
-
-    if (qrBuf) {
-      doc.image(qrBuf, 52, passCodeTop + 10, { width: 100, height: 100 });
-      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Fast-Track Gate Scan", 52, passCodeTop + 112, { width: 100, align: "center" });
-    }
-
+    // Barcode Block
+    const barTop = gTop + 120;
+    doc.rect(45, barTop, 505, 84).fillAndStroke("#f8fafc", "#cbd5e1");
     if (barcodeBuf) {
-      doc.image(barcodeBuf, 175, passCodeTop + 18, { width: 250, height: 42 });
+      doc.image(barcodeBuf, 60, barTop + 12, { width: 280, height: 44 });
+      doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Master Boarding Barcode - Scan for Auditorium, Lab & FabLab Entry", 60, barTop + 62);
     }
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text(`DIGITAL BADGE CODE: ${regId}`, 175, passCodeTop + 68);
-    doc.font("Helvetica").fontSize(8).fillColor("#475569").text("Present this pass on your smartphone or in printed format at the registration desk for badge printing.", 175, passCodeTop + 80, { width: 360 });
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Your allotted booth and power terminals will be activated upon scanning this pass.", 175, passCodeTop + 94, { width: 360 });
+    if (qrBuf) {
+      doc.image(qrBuf, 400, barTop + 6, { width: 70, height: 70 });
+      doc.font("Helvetica").fontSize(7).fillColor("#64748b").text("Live Pass QR", 400, barTop + 72, { align: "center", width: 70 });
+    }
 
-    // Competition Schedule Matrix
-    const schedTop = 430;
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("EVENT SCHEDULE & ROUNDS TIMELINE", 40, schedTop);
-    doc.moveTo(40, schedTop + 12).lineTo(555, schedTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+    // Schedule Overview
+    const schedTop = barTop + 96;
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 1: 4-STAGE ROUND CHRONOLOGY & EVALUATION TIMELINE", 45, schedTop);
+    doc.moveTo(45, schedTop + 12).lineTo(550, schedTop + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
 
-    const timeline = [
-      { t: "Dec 15 • 09:00 AM - 11:00 AM", r: "Round 1: Check-in, Badge Printing, Kit Bag Collection & Keynote" },
-      { t: "Dec 15 • 11:00 AM", r: "HACKATHON COMMENCES (27.5-Hour Non-stop Sprint Begins)" },
-      { t: "Dec 15 • 04:00 PM - 07:00 PM", r: "Round 2: Architecture Review & Mentorship Milestones" },
-      { t: "Dec 15 • 08:30 PM", r: "Dinner Buffet & Progress Checkpoint Sign-off" },
-      { t: "Dec 16 • 01:30 AM - 04:30 AM", r: "Round 3: Midnight Jury Screening (Bottom 25% Elimination Cut)" },
-      { t: "Dec 16 • 09:30 AM", r: "CODE FREEZE: Devpost Repository Submissions Locked" },
-      { t: "Dec 16 • 10:30 AM - 12:30 PM", r: "Round 4: Grand Finale Stage Pitches before VC Jury & Awards Handover" },
+    const tRows = [
+      { t: "Dec 15 | 09:00 AM - 11:00 AM", r: "Round 1: Check-in, Badge Printing, Kit Bag Collection & Keynote" },
+      { t: "Dec 15 | 11:00 AM", r: "HACKATHON COMMENCES (27.5-Hour Non-stop Sprint Begins)" },
+      { t: "Dec 15 | 04:00 PM - 07:00 PM", r: "Round 2: Architecture Review & Mentorship Milestones" },
+      { t: "Dec 15 | 08:30 PM", r: "Dinner Buffet & Progress Checkpoint Sign-off" },
+      { t: "Dec 16 | 01:30 AM - 04:30 AM", r: "Round 3: Midnight Jury Screening (Bottom 25% Elimination Cut)" },
+      { t: "Dec 16 | 09:30 AM", r: "CODE FREEZE: Devpost Repository Submissions Locked" },
+      { t: "Dec 16 | 10:30 AM - 12:30 PM", r: "Round 4: Grand Finale Stage Pitches before VC Jury & Awards" },
     ];
 
     let scY = schedTop + 18;
-    timeline.forEach((item) => {
-      doc.font("Courier-Bold").fontSize(8).fillColor("#0f172a").text(item.t, 45, scY);
-      doc.font("Helvetica").fontSize(8).fillColor("#334155").text(item.r, 220, scY, { width: 320 });
-      scY += 15;
+    tRows.forEach((item) => {
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#0f172a").text(item.t, 52, scY);
+      doc.font("Helvetica").fontSize(7.5).fillColor("#334155").text(item.r, 220, scY, { width: 320 });
+      scY += 15.5;
     });
 
-    // Mandatory Security Notice
-    const warnTop = 550;
-    doc.rect(40, warnTop, 515, 60).fillAndStroke("#fcfcfd", "#0f172a");
-    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("MANDATORY CAMPUS DISQUALIFICATION WARNING", 50, warnTop + 8);
-    doc.font("Helvetica").fontSize(8).fillColor("#1e293b").text(
-      "The campus gates are sealed throughout the 27.5-hour hackathon. Any participant stepping outside the campus perimeter without authorized written permission from the Chief Warden will be IMMEDIATELY DISQUALIFIED alongside their entire squad with no second chance.",
-      50,
+    // Page 1 Footer hint
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#475569").text("[TURN OVER TO PAGE 2 FOR ACCESS ZONES, DISCIPLINARY DIRECTIVES & SIGNATURES]", 45, 770, { align: "right", width: 505 });
+
+    // ──────────────────────── PAGE 2 ────────────────────────
+    doc.addPage();
+    drawPageFrame(doc, 2, 2, regId, "IHUB-BOARD-PASS-05", "MASTER OFFICIAL HACKER BOARDING PASS");
+
+    const p2Top = 80;
+
+    // Section 2: Campus Access Privileges
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("SECTION 2: CAMPUS ZONE ACCESS PRIVILEGES & PASS CLEARANCE", 45, p2Top);
+    doc.moveTo(45, p2Top + 12).lineTo(550, p2Top + 12).lineWidth(0.5).strokeColor("#0f172a").stroke();
+
+    const zoneY = p2Top + 18;
+    doc.rect(45, zoneY, 505, 96).fillAndStroke("#ffffff", "#cbd5e1");
+
+    const zones = [
+      { z: "Zone 1: Main Coding Arena & Tech Atrium", a: "UNRESTRICTED ACCESS", c: "Dedicated high-speed desk, ergonomic seating & dual power ports." },
+      { z: "Zone 2: i-Hub Makerspace & IoT FabLab", a: "AUTHORIZED CLEARANCE", c: "Access to 3D rapid prototyping, PCB solder stations & test equipment." },
+      { z: "Zone 3: Mentor & Jury Pitch Suites", a: "BY APPOINTMENT", c: "Round 2 & Round 3 evaluation suites with private meeting docks." },
+      { z: "Zone 4: Overnight Rest Lounges & Dorms", a: "BIOMETRIC ENTRY", c: "Segregated, supervised rest quarters with female-only secured wings." },
+    ];
+
+    zones.forEach((zn, idx) => {
+      const zy = zoneY + idx * 24;
+      if (idx > 0) doc.moveTo(45, zy).lineTo(550, zy).lineWidth(0.5).strokeColor("#f1f5f9").stroke();
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text(zn.z, 52, zy + 4);
+      doc.font("Courier-Bold").fontSize(7.5).fillColor("#059669").text(zn.a, 380, zy + 4, { align: "right", width: 155 });
+      doc.font("Helvetica").fontSize(7.5).fillColor("#475569").text(zn.c, 52, zy + 14, { width: 485 });
+    });
+
+    // Mandatory Security Warning
+    const warnTop = zoneY + 112;
+    doc.rect(45, warnTop, 505, 68).fillAndStroke("#fcfcfd", "#0f172a");
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#0f172a").text("MANDATORY CAMPUS DISQUALIFICATION WARNING", 55, warnTop + 8);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#1e293b").text(
+      "The campus gates are strictly sealed throughout the 27.5-hour hackathon. Stepping outside the campus perimeter without authorized written permission from the Chief Warden results in IMMEDIATE PERMANENT DISQUALIFICATION alongside your entire squad with no second chance.",
+      55,
       warnTop + 20,
-      { width: 495, lineGap: 2 }
+      { width: 485, lineGap: 1.8 }
     );
 
-    // Signatures
-    const passSignTop = 625;
-    doc.rect(40, passSignTop, 515, 80).fillAndStroke("#f8fafc", "#cbd5e1");
+    // Authority Signatures
+    const passSignTop = warnTop + 82;
+    doc.rect(45, passSignTop, 505, 96).fillAndStroke("#f8fafc", "#94a3b8");
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("ORGANIZING AUTHORITY", 55, passSignTop + 10);
-    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("i-HUB ADMISSIONS & JURY COMMITTEE", 55, passSignTop + 22);
-    doc.font("Helvetica").fontSize(8).fillColor("#64748b").text("Government of Gujarat Innovation Hub, Ahmedabad", 55, passSignTop + 34);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("ORGANIZING AUTHORITY", 55, passSignTop + 8);
+    doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#0f172a").text("i-HUB ADMISSIONS & JURY COMMITTEE", 55, passSignTop + 20);
+    doc.font("Helvetica").fontSize(7.5).fillColor("#64748b").text("Government of Gujarat Innovation Hub, Ahmedabad", 55, passSignTop + 32);
     doc.font("Helvetica-Bold").fontSize(8).fillColor("#059669").text("OFFICIALLY ISSUED BOARDING PASS", 55, passSignTop + 52);
 
-    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("HACKER IDENTIFICATION", 330, passSignTop + 10);
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text(`NAME: ${name.toUpperCase()}`, 330, passSignTop + 22);
-    doc.font("Courier-Bold").fontSize(8.5).fillColor("#0f172a").text(`REF ID: ${regId}`, 330, passSignTop + 36);
-    doc.font("Helvetica").fontSize(8).fillColor("#334155").text(`BOOTH: ${booth}`, 330, passSignTop + 50);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569").text("HACKER IDENTIFICATION", 300, passSignTop + 8);
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0f172a").text(`NAME: ${name.toUpperCase()}`, 300, passSignTop + 20);
+    doc.font("Courier-Bold").fontSize(8).fillColor("#0f172a").text(`REF ID: ${regId}`, 300, passSignTop + 34);
+    doc.font("Helvetica").fontSize(8).fillColor("#334155").text(`BOOTH: ${booth}`, 300, passSignTop + 48);
 
-    doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text(`Document Reference: ${regId}-MASTER-PASS • Prajna Puram, Navrangpura, Ahmedabad 380015`, 40, 792, { align: "center", width: 515 });
+    doc.rect(440, passSignTop + 14, 95, 68).strokeColor("#94a3b8").lineWidth(0.5).stroke();
+    doc.font("Helvetica").fontSize(6.5).fillColor("#94a3b8").text("OFFICIAL\nINNOVATION HUB\nEMBOSSED SEAL", 440, passSignTop + 34, { align: "center", width: 95 });
 
     doc.end();
   });
